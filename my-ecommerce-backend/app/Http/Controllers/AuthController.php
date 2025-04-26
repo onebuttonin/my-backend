@@ -1,0 +1,236 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Twilio\Rest\Client;
+// use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
+
+
+
+
+class AuthController extends Controller
+{
+    // ✅ Send OTP
+    public function sendOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|digits:10',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        $phone = $request->phone;
+
+        // Find or create user by phone number
+        $user = User::firstOrCreate(['phone' => $phone]);
+
+        // Generate 6-digit OTP
+        $otp = rand(100000, 999999);
+
+        // Save OTP with expiration time (5 minutes validity)
+        $user->otp = $otp;
+        $user->otp_expires_at = Carbon::now()->addMinutes(5);
+        $user->save();
+
+        // Simulate OTP sending (use SMS service like Twilio in production)
+        // Twilio/Msg91 API integration code goes here
+        // For now, just return OTP in response for testing
+        return response()->json([
+            'message' => 'OTP sent successfully!',
+            'otp' => $otp  // Remove this in production
+        ]);
+    }
+
+    
+
+// public function verifyOtp(Request $request)
+// {
+//     $validator = Validator::make($request->all(), [
+//         'phone' => 'required|digits:10',
+//         'otp' => 'required|digits:6',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return response()->json(['error' => $validator->errors()], 400);
+//     }
+
+//     $user = User::where('phone', $request->phone)->first();
+
+//     if (!$user || $user->otp !== $request->otp || $user->otp_expires_at < now()) {
+//         return response()->json(['error' => 'Invalid or expired OTP'], 400);
+//     }
+
+//     // Clear OTP after successful login
+//     $user->otp = null;
+//     $user->otp_expires_at = null;
+//     $user->save();
+
+//     // Generate authentication token
+//     $token = $user->createToken('auth_token')->plainTextToken;
+
+//     return response()->json([
+//         'message' => 'Login successful!',
+//         'token' => $token,
+//         'user' => $user
+//     ]);
+// }
+
+public function verifyOtp(Request $request)
+{
+    $user = User::where('phone', $request->phone)
+                ->where('otp', $request->otp)
+                ->where('otp_expires_at', '>', now())
+                ->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'Invalid or expired OTP'], 400);
+    }
+
+    // ✅ Generate the JWT token here after OTP verification
+    $token = JWTAuth::fromUser($user);
+
+    return response()->json([
+        'message' => 'OTP verified successfully',
+        'token' => $token,  // Include the token in the response
+        'registered' => $user->name && $user->email ? true : false
+    ], 200);
+}
+public function register(Request $request)
+{
+
+    $user = User::where('phone', $request->phone)->first();
+
+    $user->name = $request->name;
+    $user->email = $request->email;
+    $user->save();
+
+    return response()->json(['message' => 'User registered successfully']);
+}
+
+public function checkUser(Request $request)
+{
+    $user = User::where('phone', $request->phone)->first();
+
+    if ($user) {
+        // ✅ Check if the user is fully registered
+        $isRegistered = !empty($user->name) && !empty($user->email);
+
+        return response()->json([
+            'registered' => $isRegistered,
+            'user' => $user
+        ]);
+    }
+
+    // ❌ User not found
+    return response()->json(['registered' => false]);
+}
+
+
+public function destroy($id){
+
+    $user = User::find($id);
+
+    if (!$user) {
+        return response()->json(['message' => 'user not found'], 404);
+    }
+
+    $user->delete();
+
+    return response()->json(['message' => 'user deleted successfully'], 200);
+
+}
+
+
+public function getUserProfile(Request $request){
+    try {
+        $user = JWTAuth::parseToken()->authenticate();
+        
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        return response()->json([
+            'id' => $user->id,
+            'phone' => $user->phone,
+            'name' => $user->name,
+            'email' => $user->email,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ], 200);
+
+    } catch (TokenExpiredException $e) {
+        return response()->json(['error' => 'Token expired'], 401);
+        
+    } catch (TokenInvalidException $e) {
+        return response()->json(['error' => 'Invalid token'], 401);
+        
+    } catch (JWTException $e) {
+        return response()->json(['error' => 'Token missing or invalid'], 401);
+    }
+}
+
+
+public function getUserToken(){
+    try {
+        $user = JWTAuth::parseToken()->authenticate();
+        
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        return response()->json([
+            'id' => $user->id,
+            'phone' => $user->phone,
+            'name' => $user->name,
+            'email' => $user->email,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ], 200);
+
+    } catch (TokenExpiredException $e) {
+        return response()->json(['error' => 'Token expired'], 401);
+        
+    } catch (TokenInvalidException $e) {
+        return response()->json(['error' => 'Invalid token'], 401);
+        
+    } catch (JWTException $e) {
+        return response()->json(['error' => 'Token missing or invalid'], 401);
+    }
+}
+
+
+  public function getAllUsers(){
+
+    $Users = User::all();
+
+    return response()->json([$Users]);
+
+  }
+
+
+
+
+}
+
+
+
+
+
+
