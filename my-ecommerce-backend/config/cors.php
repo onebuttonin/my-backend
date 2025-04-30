@@ -18,7 +18,9 @@
     return [
         'paths' => ['api/*', 'sanctum/csrf-cookie'],
         'allowed_methods' => ['*'],
-        'allowed_origins' => ['http://localhost:5173'], // Ensure this matches your React URL
+        'allowed_origins' => ['http://localhost:5173',
+                              'https://onebutton.in'], 
+
         'allowed_origins_patterns' => [],
         'allowed_headers' => ['*'],
         'supports_credentials' => true,
