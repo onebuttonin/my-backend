@@ -112,6 +112,11 @@ Route::get('/search', function (Request $request) {
     return response()->json($products);
 });
 
+Route::get('/phpinfo', function () {
+    phpinfo();
+});
+
+
 });
 
 
