@@ -26,92 +26,146 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class AuthController extends Controller
 {
     // ✅ Send OTP
-    public function sendOtp(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|digits:10',
-        ]);
+//     public function sendOtp(Request $request)
+//     {
+//         $validator = Validator::make($request->all(), [
+//             'phone' => 'required|digits:10',
+//         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
+//         if ($validator->fails()) {
+//             return response()->json(['error' => $validator->errors()], 400);
+//         }
 
-        $phone = $request->phone;
+//         $phone = $request->phone;
 
-        // Find or create user by phone number
-        $user = User::firstOrCreate(['phone' => $phone]);
+//         // Find or create user by phone number
+//         $user = User::firstOrCreate(['phone' => $phone]);
 
-        // Generate 6-digit OTP
-        $otp = rand(100000, 999999);
+//         // Generate 6-digit OTP
+//         $otp = rand(100000, 999999);
 
-        // Save OTP with expiration time (5 minutes validity)
-        $user->otp = $otp;
-        $user->otp_expires_at = Carbon::now()->addMinutes(5);
-        $user->save();
+//         // Save OTP with expiration time (5 minutes validity)
+//         $user->otp = $otp;
+//         $user->otp_expires_at = Carbon::now()->addMinutes(5);
+//         $user->save();
 
-        // Simulate OTP sending (use SMS service like Twilio in production)
-        // Twilio/Msg91 API integration code goes here
-        // For now, just return OTP in response for testing
-        return response()->json([
-            'message' => 'OTP sent successfully!',
-            'otp' => $otp  // Remove this in production
-        ]);
-    }
-
-    
+//         // Simulate OTP sending (use SMS service like Twilio in production)
+//         // Twilio/Msg91 API integration code goes here
+//         // For now, just return OTP in response for testing
+//         return response()->json([
+//             'message' => 'OTP sent successfully!',
+//             'otp' => $otp  // Remove this in production
+//         ]);
+//     }
 
 // public function verifyOtp(Request $request)
 // {
-//     $validator = Validator::make($request->all(), [
-//         'phone' => 'required|digits:10',
-//         'otp' => 'required|digits:6',
-//     ]);
+//     $user = User::where('phone', $request->phone)
+//                 ->where('otp', $request->otp)
+//                 ->where('otp_expires_at', '>', now())
+//                 ->first();
 
-//     if ($validator->fails()) {
-//         return response()->json(['error' => $validator->errors()], 400);
+//     if (!$user) {
+//         return response()->json(['message' => 'Invalid or expired OTP'], 400);
 //     }
 
-//     $user = User::where('phone', $request->phone)->first();
-
-//     if (!$user || $user->otp !== $request->otp || $user->otp_expires_at < now()) {
-//         return response()->json(['error' => 'Invalid or expired OTP'], 400);
-//     }
-
-//     // Clear OTP after successful login
-//     $user->otp = null;
-//     $user->otp_expires_at = null;
-//     $user->save();
-
-//     // Generate authentication token
-//     $token = $user->createToken('auth_token')->plainTextToken;
+//     // ✅ Generate the JWT token here after OTP verification
+//     $token = JWTAuth::fromUser($user);
 
 //     return response()->json([
-//         'message' => 'Login successful!',
-//         'token' => $token,
-//         'user' => $user
-//     ]);
+//         'message' => 'OTP verified successfully',
+//         'token' => $token,  // Include the token in the response
+//         'registered' => $user->name && $user->email ? true : false
+//     ], 200);
 // }
+
+public function sendOtp(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'phone' => 'required|digits:10',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
+    }
+
+    $phone = $request->phone;
+
+    // Call 2Factor API
+    $apiKey = env('TWOFACTOR_API_KEY');
+
+    try {
+        $response = Http::get("https://2factor.in/API/V1/{$apiKey}/SMS/+91{$phone}/AUTOGEN");
+
+        $data = $response->json();
+
+        if ($data['Status'] === 'Success') {
+            // Save session ID (optional)
+            Cache::put("otp_session_{$phone}", $data['Details'], now()->addMinutes(5));
+
+            return response()->json([
+                'message' => 'OTP sent successfully',
+                'session_id' => $data['Details'], // Optional: for verifyOtp step
+            ]);
+        } else {
+            return response()->json(['error' => 'Failed to send OTP'], 500);
+        }
+    } catch (\Exception $e) {
+        \Log::error('2Factor API Error: ' . $e->getMessage());
+        return response()->json(['error' => 'Error sending OTP'], 500);
+    }
+}
+
 
 public function verifyOtp(Request $request)
 {
-    $user = User::where('phone', $request->phone)
-                ->where('otp', $request->otp)
-                ->where('otp_expires_at', '>', now())
-                ->first();
+    $validator = Validator::make($request->all(), [
+        'phone' => 'required|digits:10',
+        'otp'   => 'required|digits:6',
+    ]);
 
-    if (!$user) {
-        return response()->json(['message' => 'Invalid or expired OTP'], 400);
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
     }
 
-    // ✅ Generate the JWT token here after OTP verification
-    $token = JWTAuth::fromUser($user);
+    $phone = $request->phone;
+    $otp = $request->otp;
 
-    return response()->json([
-        'message' => 'OTP verified successfully',
-        'token' => $token,  // Include the token in the response
-        'registered' => $user->name && $user->email ? true : false
-    ], 200);
+    $apiKey = env('TWOFACTOR_API_KEY');
+    $sessionId = Cache::get("otp_session_{$phone}");
+
+    if (!$sessionId) {
+        return response()->json(['error' => 'Session expired. Please request a new OTP.'], 400);
+    }
+
+    try {
+        $response = Http::get("https://2factor.in/API/V1/{$apiKey}/SMS/VERIFY/{$sessionId}/{$otp}");
+
+        $data = $response->json();
+
+        if ($data['Status'] === 'Success') {
+            // User verified successfully
+            $user = User::firstOrCreate(['phone' => $phone]);
+
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'message' => 'OTP verified successfully',
+                'token' => $token,
+                'registered' => $user->name && $user->email ? true : false
+            ]);
+        } else {
+            return response()->json(['error' => 'Invalid OTP'], 400);
+        }
+
+    } catch (\Exception $e) {
+        \Log::error('OTP verification failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Verification error'], 500);
+    }
 }
+
+
+
 public function register(Request $request)
 {
 

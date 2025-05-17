@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'twofactor' => [
+    'api_key' => env('TWO_FACTOR_API_KEY'),
+    'template' => env('TWO_FACTOR_TEMPLATE', null),
+],
+
+
 ];
