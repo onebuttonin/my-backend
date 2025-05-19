@@ -82,13 +82,18 @@ class AuthController extends Controller
 public function sendOtp(Request $request)
 {
     $validator = Validator::make($request->all(), [
+<<<<<<< HEAD
         'email' => 'required|email',
+=======
+        'phone' => 'required|digits:10',
+>>>>>>> 6211ee9 (2factor inti)
     ]);
 
     if ($validator->fails()) {
         return response()->json(['error' => $validator->errors()], 400);
     }
 
+<<<<<<< HEAD
     $email = $request->email;
 
     // Find or create user by email
@@ -113,12 +118,39 @@ public function sendOtp(Request $request)
     } catch (\Exception $e) {
         \Log::error('Failed to send OTP email: ' . $e->getMessage());
         return response()->json(['error' => 'Failed to send OTP email. Please try again later.'], 500);
+=======
+    $phone = $request->phone;
+
+    // Call 2Factor API
+    $apiKey = env('TWOFACTOR_API_KEY');
+
+    try {
+        $response = Http::get("https://2factor.in/API/V1/{$apiKey}/SMS/+91{$phone}/AUTOGEN");
+
+        $data = $response->json();
+
+        if ($data['Status'] === 'Success') {
+            // Save session ID (optional)
+            Cache::put("otp_session_{$phone}", $data['Details'], now()->addMinutes(5));
+
+            return response()->json([
+                'message' => 'OTP sent successfully',
+                'session_id' => $data['Details'], // Optional: for verifyOtp step
+            ]);
+        } else {
+            return response()->json(['error' => 'Failed to send OTP'], 500);
+        }
+    } catch (\Exception $e) {
+        \Log::error('2Factor API Error: ' . $e->getMessage());
+        return response()->json(['error' => 'Error sending OTP'], 500);
+>>>>>>> 6211ee9 (2factor inti)
     }
 }
 
 
 public function verifyOtp(Request $request)
 {
+<<<<<<< HEAD
     $request->validate([
         'email' => 'required|email',
         'otp' => 'required|digits:6',
@@ -128,11 +160,18 @@ public function verifyOtp(Request $request)
                 ->where('otp', $request->otp)
                 ->where('otp_expires_at', '>', now())
                 ->first();
+=======
+    $validator = Validator::make($request->all(), [
+        'phone' => 'required|digits:10',
+        'otp'   => 'required|digits:6',
+    ]);
+>>>>>>> 6211ee9 (2factor inti)
 
-    if (!$user) {
-        return response()->json(['message' => 'Invalid or expired OTP'], 400);
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
     }
 
+<<<<<<< HEAD
     // OTP verified: generate JWT token
     $token = JWTAuth::fromUser($user);
 
@@ -141,6 +180,42 @@ public function verifyOtp(Request $request)
         'token' => $token,
         'registered' => $user->name ? true : false
     ], 200);
+=======
+    $phone = $request->phone;
+    $otp = $request->otp;
+
+    $apiKey = env('TWOFACTOR_API_KEY');
+    $sessionId = Cache::get("otp_session_{$phone}");
+
+    if (!$sessionId) {
+        return response()->json(['error' => 'Session expired. Please request a new OTP.'], 400);
+    }
+
+    try {
+        $response = Http::get("https://2factor.in/API/V1/{$apiKey}/SMS/VERIFY/{$sessionId}/{$otp}");
+
+        $data = $response->json();
+
+        if ($data['Status'] === 'Success') {
+            // User verified successfully
+            $user = User::firstOrCreate(['phone' => $phone]);
+
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'message' => 'OTP verified successfully',
+                'token' => $token,
+                'registered' => $user->name && $user->email ? true : false
+            ]);
+        } else {
+            return response()->json(['error' => 'Invalid OTP'], 400);
+        }
+
+    } catch (\Exception $e) {
+        \Log::error('OTP verification failed: ' . $e->getMessage());
+        return response()->json(['error' => 'Verification error'], 500);
+    }
+>>>>>>> 6211ee9 (2factor inti)
 }
 
 
