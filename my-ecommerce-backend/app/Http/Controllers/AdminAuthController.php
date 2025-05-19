@@ -106,7 +106,7 @@ class AdminAuthController extends Controller {
 
     // Send OTP via email
     try {
-        Mail::raw("Your OTP code is: {$otp}", function ($message) use ($admin) {
+        Mail::raw("Your OTP code for Admin login is: {$otp}", function ($message) use ($admin) {
             $message->to($admin->email)
                     ->subject('Your Admin OTP Code');
         });
