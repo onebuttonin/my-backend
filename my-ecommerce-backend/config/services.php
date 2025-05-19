@@ -35,14 +35,6 @@ return [
         ],
     ],
 
-<<<<<<< HEAD
-
-=======
-    'twofactor' => [
-    'api_key' => env('TWO_FACTOR_API_KEY'),
-    'template' => env('TWO_FACTOR_TEMPLATE', null),
-],
->>>>>>> 6211ee9 (2factor inti)
 
 
 ];
