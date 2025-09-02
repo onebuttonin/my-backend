@@ -191,6 +191,37 @@ public function removeFromProduct($id) {
 // }
 
 
+// public function update(Request $request, $id)
+// {
+//     $product = Product::findOrFail($id);
+
+//     // ✅ Validate only fields that are present in the request
+//     $request->validate([
+//         'name' => 'sometimes|string|max:255',
+//         'category' => 'sometimes|string|max:255',
+//         'price' => 'sometimes|numeric|min:0',
+//         'old_price' => 'sometimes|numeric|min:0', // ✅ added validation
+//         'stock' => 'sometimes|integer|min:0',
+//         'description' => 'sometimes|string',
+//     ]);
+
+//     // ✅ Update only fields that exist in the request
+//     if ($request->has('name')) $product->name = $request->name;
+//     if ($request->has('category')) $product->category = $request->category;
+//     if ($request->has('price')) $product->price = $request->price;
+//     if ($request->has('old_price')) $product->old_price = $request->old_price; // ✅ added update
+//     if ($request->has('stock')) $product->stock = $request->stock;
+//     if ($request->has('description')) $product->description = $request->description;
+
+//     $product->save();
+
+//     return response()->json([
+//         'message' => 'Product updated successfully',
+//         'product' => $product
+//     ], 200);
+// }
+
+
 public function update(Request $request, $id)
 {
     $product = Product::findOrFail($id);
@@ -200,18 +231,23 @@ public function update(Request $request, $id)
         'name' => 'sometimes|string|max:255',
         'category' => 'sometimes|string|max:255',
         'price' => 'sometimes|numeric|min:0',
-        'old_price' => 'sometimes|numeric|min:0', // ✅ added validation
+        'old_price' => 'sometimes|numeric|min:0',
         'stock' => 'sometimes|integer|min:0',
-        'description' => 'sometimes|string',
+        'description' => 'sometimes|array', // ✅ description must be an array (JSON)
+        'description.details' => 'sometimes|string|nullable',
+        'description.size_fit' => 'sometimes|string|nullable',
+        'description.wash_care' => 'sometimes|string|nullable',
+        'description.specification' => 'sometimes|array|nullable',
+        'description.sku' => 'sometimes|string|nullable',
     ]);
 
     // ✅ Update only fields that exist in the request
     if ($request->has('name')) $product->name = $request->name;
     if ($request->has('category')) $product->category = $request->category;
     if ($request->has('price')) $product->price = $request->price;
-    if ($request->has('old_price')) $product->old_price = $request->old_price; // ✅ added update
+    if ($request->has('old_price')) $product->old_price = $request->old_price;
     if ($request->has('stock')) $product->stock = $request->stock;
-    if ($request->has('description')) $product->description = $request->description;
+    if ($request->has('description')) $product->description = $request->description; // ✅ stored as JSON
 
     $product->save();
 
@@ -220,7 +256,6 @@ public function update(Request $request, $id)
         'product' => $product
     ], 200);
 }
-
 
 
 

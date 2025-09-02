@@ -17,6 +17,7 @@ class Product extends Model {
         'availableSizes' => 'array',
         'availableColors' => 'array',
         'thumbnail_images' => 'array',
+        'description' => 'array',
     ];
 
     public function ratings()
