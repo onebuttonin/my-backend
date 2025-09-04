@@ -28,6 +28,71 @@ class AuthController extends Controller
 {
   
 
+// public function sendOtp(Request $request)
+// {
+//     $validator = Validator::make($request->all(), [
+//         'email' => 'required|email',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return response()->json(['error' => $validator->errors()], 400);
+//     }
+
+//     $email = $request->email;
+
+//     // Find or create user by email
+//     $user = User::firstOrCreate(['email' => $email]);
+
+//     // Generate 6-digit OTP
+//     $otp = rand(1000, 9999);
+
+//     // Save OTP with expiration time (5 minutes validity)
+//     $user->otp = $otp;
+//     $user->otp_expires_at = Carbon::now()->addMinutes(5);
+//     $user->save();
+
+//     // Send OTP to user's email
+//     try {
+//         Mail::raw("Your OTP code is: {$otp}", function ($message) use ($email) {
+//             $message->to($email)
+//                     ->subject('Your OneButton OTP Code');
+//         });
+
+//         return response()->json(['message' => 'OTP sent to your email successfully!']);
+//     } catch (\Exception $e) {
+//         \Log::error('Failed to send OTP email: ' . $e->getMessage());
+//         return response()->json(['error' => 'Failed to send OTP email. Please try again later.'], 500);
+//     }
+// }
+
+
+// public function verifyOtp(Request $request)
+// {
+//     $request->validate([
+//         'email' => 'required|email',
+//         'otp' => 'required|digits:4',
+//     ]);
+
+//     $user = User::where('email', $request->email)
+//                 ->where('otp', $request->otp)
+//                 ->where('otp_expires_at', '>', now())
+//                 ->first();
+
+//     if (!$user) {
+//         return response()->json(['message' => 'Invalid or expired OTP'], 400);
+//     }
+
+//     // OTP verified: generate JWT token
+//     $token = JWTAuth::fromUser($user);
+
+//     return response()->json([
+//         'message' => 'OTP verified successfully',
+//         'token' => $token,
+//         'registered' => $user->name ? true : false
+//     ], 200);
+// }
+
+
 public function sendOtp(Request $request)
 {
     $validator = Validator::make($request->all(), [
@@ -38,20 +103,20 @@ public function sendOtp(Request $request)
         return response()->json(['error' => $validator->errors()], 400);
     }
 
-    $email = $request->email;
+    // Normalize email to avoid case/space mismatches
+    $email = strtolower(trim($request->email));
 
     // Find or create user by email
     $user = User::firstOrCreate(['email' => $email]);
 
-    // Generate 6-digit OTP
-    $otp = rand(100000, 999999);
+    // Generate 4-digit OTP
+    $otp = (string) random_int(1000, 9999); // keep as string
 
-    // Save OTP with expiration time (5 minutes validity)
+    // Save OTP with expiration time (5 minutes)
     $user->otp = $otp;
     $user->otp_expires_at = Carbon::now()->addMinutes(5);
     $user->save();
 
-    // Send OTP to user's email
     try {
         Mail::raw("Your OTP code is: {$otp}", function ($message) use ($email) {
             $message->to($email)
@@ -65,33 +130,40 @@ public function sendOtp(Request $request)
     }
 }
 
-
 public function verifyOtp(Request $request)
 {
+    // Normalize email
+    $request->merge(['email' => strtolower(trim($request->input('email')))]);
+
     $request->validate([
         'email' => 'required|email',
-        'otp' => 'required|digits:6',
+        'otp'   => 'required|digits:4',
     ]);
 
     $user = User::where('email', $request->email)
-                ->where('otp', $request->otp)
-                ->where('otp_expires_at', '>', now())
+                ->where('otp', $request->otp)              // exact match
+                ->where('otp_expires_at', '>', now())      // not expired
                 ->first();
 
     if (!$user) {
         return response()->json(['message' => 'Invalid or expired OTP'], 400);
     }
 
-    // OTP verified: generate JWT token
+    // OTP verified → clear OTP to prevent reuse
+    $user->otp = null;
+    $user->otp_expires_at = null;
+    $user->save();
+
+    // Issue JWT
     $token = JWTAuth::fromUser($user);
 
     return response()->json([
-        'message' => 'OTP verified successfully',
-        'token' => $token,
-        'registered' => $user->name ? true : false
+        'message'    => 'OTP verified successfully',
+        'token'      => $token,
+        'registered' => (bool) $user->name,
+        'user'       => $user, // helpful for your UI
     ], 200);
 }
-
 
 
 public function register(Request $request)
