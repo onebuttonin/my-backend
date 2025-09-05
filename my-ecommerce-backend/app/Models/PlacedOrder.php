@@ -26,8 +26,15 @@ class PlacedOrder extends Model
         'cart_total',
         'order_status'
     ];
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class);
+    // }
+    // // app/Models/PlacedOrder.php
+
+public function user()
+{
+    return $this->belongsTo(\App\Models\User::class, 'user_id', 'id');
+}
+
 }

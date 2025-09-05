@@ -11,6 +11,7 @@
         "laravel/framework": "^11.31",
         "laravel/sanctum": "*",
         "laravel/tinker": "^2.9",
+        "sendinblue/api-v3-sdk": "^8.4",
         "twilio/sdk": "^8.3",
         "tymon/jwt-auth": "^2.2"
     },

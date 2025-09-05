@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;   
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\ProductRatingController;
+use App\Http\Controllers\TransactionalMailController;
 
 
 Route::middleware('api')->group(function () {
@@ -144,6 +145,10 @@ Route::prefix('admin')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout']);
     });
 });
+
+
+
+Route::post('/send-order-mail', [TransactionalMailController::class, 'sendOrderMail']);
 
 // Route::middleware(['admin.auth'])->group(function () {
 //     Route::get('/admin/dashboard', function () {
