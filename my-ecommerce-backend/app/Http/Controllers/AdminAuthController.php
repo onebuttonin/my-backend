@@ -194,13 +194,7 @@ public function getAdminProfile()
     }
 }
 
-  public function getAllUsers(){
 
-    $Users = User::all();
-
-    return response()->json([$Users]);
-
-  }
 
 
 }

@@ -17,6 +17,8 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\DB;
+
 
 
 
@@ -283,15 +285,44 @@ public function getUserToken(){
 }
 
 
-  public function getAllUsers(){
+//   public function getAllUsers(){
 
-    $Users = User::all();
+//     $Users = User::all();
 
-    return response()->json([$Users]);
+//     return response()->json([$Users]);
 
-  }
+//   }
 
 
+public function getAllUsers()
+{
+    try {
+        // Authenticate via admin guard
+        $admin = Auth::guard('admin')->user();
+
+        if (!$admin) {
+            return response()->json(['error' => 'Admin not found'], 404);
+        }
+
+        // ✅ If you also want to ensure only admins can fetch:
+        // if ($admin->role !== 'admin') {
+        //     return response()->json(['error' => 'Forbidden'], 403);
+        // }
+
+        $users = User::all();
+
+        return response()->json($users, 200);
+
+    } catch (TokenExpiredException $e) {
+        return response()->json(['error' => 'Token expired'], 401);
+
+    } catch (TokenInvalidException $e) {
+        return response()->json(['error' => 'Invalid token'], 401);
+
+    } catch (JWTException $e) {
+        return response()->json(['error' => 'Token missing or invalid'], 401);
+    }
+}
 
 
 }

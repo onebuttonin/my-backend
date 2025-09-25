@@ -141,6 +141,7 @@ Route::prefix('admin')->group(function () {
     });
 });
 
+Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
 
 Route::middleware(['auth:admin'])->group(function () {
 
@@ -170,9 +171,7 @@ Route::delete('/ratings/{id}', [ProductRatingController::class, 'destroy']); // 
 Route::get('adminallorders',[PlaceOrderController::class,'AllOrders']);
 Route::post('/update-status', [PlaceOrderController::class, 'updateStatusByAdmin']);
 
-Route::get('/Allusers',[AdminAuthController::class, 'getAllUsers']
-
-);
+// Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
 
 });
 
