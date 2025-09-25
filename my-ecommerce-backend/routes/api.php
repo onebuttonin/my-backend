@@ -134,7 +134,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']); // Step 1: Request OTP
     Route::post('/verify-otp', [AdminAuthController::class, 'verifyOTP']); // Step 2: Verify OTP
     Route::middleware(['auth:admin'])->get('/profile',[AdminAuthController::class, 'getAdminProfile']);
-    Route::middleware(['auth:admin'])->get('/Allusers',[AdminAuthController::class, 'getAllUsers']);
+  
 
     Route::middleware('auth:api')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout']);
@@ -169,6 +169,10 @@ Route::delete('/ratings/{id}', [ProductRatingController::class, 'destroy']); // 
 
 Route::get('adminallorders',[PlaceOrderController::class,'AllOrders']);
 Route::post('/update-status', [PlaceOrderController::class, 'updateStatusByAdmin']);
+
+Route::get('/Allusers',[AdminAuthController::class, 'getAllUsers']
+
+);
 
 });
 
