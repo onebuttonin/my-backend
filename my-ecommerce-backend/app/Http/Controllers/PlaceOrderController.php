@@ -15,70 +15,349 @@ class PlaceOrderController extends Controller {
 
     
 
-    // public function store(Request $request)
-    // {
-    //     try {
-    //         // ✅ Authenticate the user using JWT token
-    //         $user = JWTAuth::parseToken()->authenticate();
-    
-    //         // ✅ Validate the request
-    //         $request->validate([
-    //             'name' => 'required|string|max:255',
-    //             'street1' => 'required|string|max:255',
-    //             'street2' => 'nullable|string|max:255',
-    //             'city' => 'required|string|max:255',
-    //             'state' => 'required|string|max:255',
-    //             'pincode' => 'required|string|max:20',
-    //             'mobile' => 'required|string|max:20',
-    //             'payment_method' => 'required|string|max:50',
-    //             'cart_id' => 'required|integer', // Removed 'exists' validation
-    //             'cart_total' => 'required|numeric',
-    //             'order_status' => 'nullable|string|max:50'
-    //         ]);
-    
-    //         // ✅ Check if an order already exists for this cart_id
-    //         $existingOrder = PlacedOrder::where('cart_id', $request->cart_id)->first();
-    //         if ($existingOrder) {
-    //             return response()->json([
-    //                 'message' => 'Order already placed for this cart',
-    //                 'order' => $existingOrder
-    //             ], 409); // 409 Conflict
-    //         }
-    
-    //         // ✅ Create new order with user_id
-    //         $order = PlacedOrder::create([
-    //             'user_id' => $user->id,   // ✅ Associate order with the authenticated user
-    //             'name' => $request->name,
-    //             'street1' => $request->street1,
-    //             'street2' => $request->street2,
-    //             'city' => $request->city,
-    //             'state' => $request->state,
-    //             'pincode' => $request->pincode,
-    //             'mobile' => $request->mobile,
-    //             'payment_method' => $request->payment_method,
-    //             'cart_id' => $request->cart_id,
-    //             'cart_total' => $request->cart_total,
-    //             'order_status' => $request->order_status ?? 'Order Placed'  // Default to 'pending' if not provided
-    //         ]);
-    
-    //         return response()->json([
-    //             'message' => 'Order placed successfully',
-    //             'order' => $order
-    //         ], 201); // 201 Created
-    
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => $e->getMessage()], 500);
-    //     }
-    // }
-    
+   
 
-  public function store(\Illuminate\Http\Request $request)
+//   public function store(\Illuminate\Http\Request $request)
+// {
+//     try {
+//         // Authenticate the user using JWT token
+//         $user = \Tymon\JWTAuth\Facades\JWTAuth::parseToken()->authenticate();
+
+//         // Validate the request
+//         $request->validate([
+//             'name' => 'required|string|max:255',
+//             'street1' => 'required|string|max:255',
+//             'street2' => 'nullable|string|max:255',
+//             'city' => 'required|string|max:255',
+//             'state' => 'required|string|max:255',
+//             'pincode' => 'required|string|max:20',
+//             'mobile' => 'required|string|max:20',
+//             'payment_method' => 'required|string|max:50',
+//             'cart_id' => 'required|integer',
+//             'cart_total' => 'required|numeric',
+//             'order_status' => 'nullable|string|max:50'
+//         ]);
+
+//         // Prevent duplicate orders for same cart
+//         $existingOrder = \App\Models\PlacedOrder::where('cart_id', $request->cart_id)->first();
+//         if ($existingOrder) {
+//             return response()->json([
+//                 'message' => 'Order already placed for this cart',
+//                 'order' => $existingOrder
+//             ], 409);
+//         }
+
+//         // Create the order
+//         $order = \App\Models\PlacedOrder::create([
+//             'user_id' => $user->id,
+//             'name' => $request->name,
+//             'street1' => $request->street1,
+//             'street2' => $request->street2 ?? null,
+//             'city' => $request->city,
+//             'state' => $request->state,
+//             'pincode' => $request->pincode,
+//             'mobile' => $request->mobile,
+//             'payment_method' => $request->payment_method,
+//             'cart_id' => $request->cart_id,
+//             'cart_total' => $request->cart_total,
+//             'order_status' => $request->order_status ?? 'Order Confirmed',
+//         ]);
+
+//         // Optionally mark cart completed here if desired (you already call from frontend)
+//         // try {
+//         //     \App\Models\Cart::where('id', $request->cart_id)->update(['status' => 'completed']);
+//         // } catch (\Throwable $e) {
+//         //     \Log::warning('Failed to mark cart completed', ['cart_id'=>$request->cart_id, 'err'=>$e->getMessage()]);
+//         // }
+
+//         // --- Attempt to send "Order Confirmed" email (non-blocking) ---
+//         $emailAttempted = false;
+//         $emailResult = null;
+
+//         try {
+//             // Determine recipient email & name. Prefer authenticated user's email/name.
+//             $userEmail = $user->email ?? null;
+//             $userName  = $user->name ?? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+
+//             // If frontend passed an email/name explicitly, prefer those
+//             if ($request->filled('email')) {
+//                 $userEmail = $request->input('email');
+//             }
+//             if ($request->filled('name')) {
+//                 $userName = $request->input('name');
+//             }
+
+//             if (!empty($userEmail)) {
+//                 $emailPayload = [
+//                     'email' => $userEmail,
+//                     'name' => $userName ?: ($request->name ?? 'Customer'),
+//                     'orderId' => $order->id,
+//                     'trackingId' => null,
+//                     'orderStatus' => 'Order Confirmed',
+//                     // 'templateId' => <int> // optional: force a template ID
+//                 ];
+
+//                 // Create a Request instance and call the mail controller on an instance
+//                 $fakeRequest = new \Illuminate\Http\Request();
+//                 $fakeRequest->replace($emailPayload);
+
+//                 // Make an instance of your mail controller (container resolves dependencies)
+//                 $mailController = app()->make(\App\Http\Controllers\TransactionalMailController::class);
+
+//                 // Call the instance method (not statically)
+//                 $response = $mailController->sendOrderMail($fakeRequest);
+
+//                 $emailAttempted = true;
+//                 $emailResult = $response instanceof \Illuminate\Http\JsonResponse ? $response->getData(true) : $response;
+//                 \Log::info('Order confirmation email attempted', ['order_id' => $order->id, 'mail_result' => $emailResult]);
+//             } else {
+//                 \Log::warning('Order placed but no email found to send confirmation', ['order_id' => $order->id, 'user_id' => $user->id]);
+//             }
+//         } catch (\Throwable $e) {
+//             // Log but do not fail the order creation
+//             \Log::error('Failed to auto-send order confirmation email', ['order_id' => $order->id, 'err' => $e->getMessage()]);
+//             $emailAttempted = true;
+//             $emailResult = ['error' => $e->getMessage()];
+//         }
+
+//         // Return the created order and email attempt info
+//         return response()->json([
+//             'message' => 'Order placed successfully',
+//             'order' => $order,
+//             'email_attempted' => $emailAttempted,
+//             'email_result' => $emailResult
+//         ], 201);
+
+//     } catch (\Illuminate\Validation\ValidationException $ve) {
+//         return response()->json(['errors' => $ve->errors()], 422);
+//     } catch (\Throwable $e) {
+//         \Log::error('Place order failed', ['err' => $e->getMessage(), 'payload' => $request->all()]);
+//         return response()->json(['error' => 'Failed to place order', 'details' => $e->getMessage()], 500);
+//     }
+// }
+
+
+// public function store(\Illuminate\Http\Request $request)
+// {
+//     try {
+//         // Authenticate the user using JWT token
+//         $user = \Tymon\JWTAuth\Facades\JWTAuth::parseToken()->authenticate();
+
+//         // Validate the request (added optional delivery/packaging fields)
+//         $request->validate([
+//             'name' => 'required|string|max:255',
+//             'street1' => 'required|string|max:255',
+//             'street2' => 'nullable|string|max:255',
+//             'city' => 'required|string|max:255',
+//             'state' => 'required|string|max:255',
+//             'pincode' => 'required|string|max:20',
+//             'mobile' => 'required|string|max:20',
+//             'payment_method' => 'required|string|max:50',
+//             'cart_id' => 'required|integer',
+//             'cart_total' => 'required|numeric',
+//             'order_status' => 'nullable|string|max:50',
+//             'delivery_charges' => 'nullable|numeric',
+//             'packaging_cost' => 'nullable|numeric',
+//         ]);
+
+//         // Prevent duplicate orders for same cart
+//         $existingOrder = \App\Models\PlacedOrder::where('cart_id', $request->cart_id)->first();
+//         if ($existingOrder) {
+//             return response()->json([
+//                 'message' => 'Order already placed for this cart',
+//                 'order' => $existingOrder
+//             ], 409);
+//         }
+
+//         // Load cart with items and product relationship
+//         $cart = \App\Models\Cart::with(['cartItems.product'])->find($request->cart_id);
+//         if (!$cart) {
+//             return response()->json(['message' => 'Cart not found'], 404);
+//         }
+
+//         // Begin DB transaction so we snapshot consistently
+//         $order = null;
+//         \DB::beginTransaction();
+//         try {
+//             // Create the order base record first (so id exists)
+//             $order = \App\Models\PlacedOrder::create([
+//                 'user_id' => $user->id,
+//                 'name' => $request->name,
+//                 'street1' => $request->street1,
+//                 'street2' => $request->street2 ?? null,
+//                 'city' => $request->city,
+//                 'state' => $request->state,
+//                 'pincode' => $request->pincode,
+//                 'mobile' => $request->mobile,
+//                 'payment_method' => $request->payment_method,
+//                 'cart_id' => $request->cart_id,
+//                 'cart_total' => $request->cart_total,
+//                 'order_status' => $request->order_status ?? 'Order Confirmed',
+//                 // preset delivery & packaging (may be updated below)
+//                 'delivery_charges' => $request->input('delivery_charges', 0),
+//                 'packaging_cost' => $request->input('packaging_cost', 0),
+//             ]);
+
+//             // Build items snapshot and compute items_cost_sum
+//             $itemsSnapshot = [];
+//             $itemsCostSum = 0;
+
+//             $cartItems = $cart->cartItems ?? collect();
+//             foreach ($cartItems as $ci) {
+//                 $product = $ci->product;
+//                 $qty = intval($ci->quantity ?? 0);
+
+//                 // Read cost_price from product table at placement time (fallback to 0)
+//                 $costPrice = 0;
+//                 if ($product && isset($product->cost_price)) {
+//                     $costPrice = floatval($product->cost_price);
+//                 }
+
+//                 // Determine selling price snapshot
+//                 $sellingPrice = isset($ci->price) ? floatval($ci->price) : (isset($product->price) ? floatval($product->price) : 0);
+
+//                 // Accumulate items cost
+//                 $itemsCostSum += ($costPrice * $qty);
+
+//                 // Push snapshot entry
+//                 $itemsSnapshot[] = [
+//                     'product_id' => $product->id ?? $ci->product_id ?? null,
+//                     'name' => $product->name ?? null,
+//                     'quantity' => $qty,
+//                     'selling_price' => $sellingPrice,
+//                     'cost_price' => $costPrice,
+//                 ];
+
+//                 // Optionally: if you have an order_items table, insert here
+//                 // \App\Models\OrderItem::create([
+//                 //    'order_id' => $order->id,
+//                 //    'product_id' => $product->id,
+//                 //    'quantity' => $qty,
+//                 //    'price' => $sellingPrice,
+//                 //    'cost_price' => $costPrice
+//                 // ]);
+//             }
+
+//             // Compute payment gateway fee for prepaid orders (example 2% + ₹3)
+//             $paymentMethod = $order->payment_method;
+//             $isPrepaid = strtolower($paymentMethod) !== 'cod' && !empty($paymentMethod);
+//             $gatewayFee = 0;
+//             if ($isPrepaid) {
+//                 // Pull from config if available, else default
+//                 $gatewayPercentage = config('payments.gateway_percentage', 0.02);
+//                 $gatewayFixed = config('payments.gateway_fixed', 3);
+//                 $gatewayFee = round((floatval($order->cart_total) * $gatewayPercentage) + $gatewayFixed, 2);
+//             }
+
+//             // Delivery & packaging from request/order record
+//             $delivery = floatval($order->delivery_charges ?? $request->input('delivery_charges', 0));
+//             $packaging = floatval($order->packaging_cost ?? $request->input('packaging_cost', 0));
+
+//             // total expense and net profit
+//             $totalExpense = round($itemsCostSum + $delivery + $packaging + $gatewayFee, 2);
+//             $netProfit = round(floatval($order->cart_total) - $totalExpense, 2);
+
+//             // Update order with computed fields
+//             $order->update([
+//                 'is_prepaid' => $isPrepaid,
+//                 'payment_gateway_fee' => $gatewayFee,
+//                 'items_cost_sum' => $itemsCostSum,
+//                 'total_expense' => $totalExpense,
+//                 'net_profit' => $netProfit,
+//                 'items_snapshot' => json_encode($itemsSnapshot),
+//             ]);
+
+//             // Optionally mark cart as completed/ordered
+//             try {
+//                 $cart->status = 'completed';
+//                 $cart->save();
+//             } catch (\Throwable $e) {
+//                 // don't abort the transaction for cart update; log and continue
+//                 \Log::warning('Failed to mark cart completed', ['cart_id' => $cart->id, 'err' => $e->getMessage()]);
+//             }
+
+//             \DB::commit();
+//         } catch (\Throwable $e) {
+//             \DB::rollBack();
+//             \Log::error('Order placement transaction failed', ['err' => $e->getMessage()]);
+//             return response()->json(['error' => 'Failed to place order', 'details' => $e->getMessage()], 500);
+//         }
+
+//         // --- Attempt to send "Order Confirmed" email (non-blocking) ---
+//         $emailAttempted = false;
+//         $emailResult = null;
+
+//         try {
+//             // Determine recipient email & name. Prefer authenticated user's email/name.
+//             $userEmail = $user->email ?? null;
+//             $userName  = $user->name ?? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+
+//             // If frontend passed an email/name explicitly, prefer those
+//             if ($request->filled('email')) {
+//                 $userEmail = $request->input('email');
+//             }
+//             if ($request->filled('name')) {
+//                 $userName = $request->input('name');
+//             }
+
+//             if (!empty($userEmail)) {
+//                 $emailPayload = [
+//                     'email' => $userEmail,
+//                     'name' => $userName ?: ($request->name ?? 'Customer'),
+//                     'orderId' => $order->id,
+//                     'trackingId' => null,
+//                     'orderStatus' => 'Order Confirmed',
+//                     // 'templateId' => <int> // optional: force a template ID
+//                 ];
+
+//                 // Create a Request instance and call the mail controller on an instance
+//                 $fakeRequest = new \Illuminate\Http\Request();
+//                 $fakeRequest->replace($emailPayload);
+
+//                 // Make an instance of your mail controller (container resolves dependencies)
+//                 $mailController = app()->make(\App\Http\Controllers\TransactionalMailController::class);
+
+//                 // Call the instance method (not statically)
+//                 $response = $mailController->sendOrderMail($fakeRequest);
+
+//                 $emailAttempted = true;
+//                 $emailResult = $response instanceof \Illuminate\Http\JsonResponse ? $response->getData(true) : $response;
+//                 \Log::info('Order confirmation email attempted', ['order_id' => $order->id, 'mail_result' => $emailResult]);
+//             } else {
+//                 \Log::warning('Order placed but no email found to send confirmation', ['order_id' => $order->id, 'user_id' => $user->id]);
+//             }
+//         } catch (\Throwable $e) {
+//             // Log but do not fail the order creation
+//             \Log::error('Failed to auto-send order confirmation email', ['order_id' => $order->id, 'err' => $e->getMessage()]);
+//             $emailAttempted = true;
+//             $emailResult = ['error' => $e->getMessage()];
+//         }
+
+//         // Return the created order and email attempt info (fresh order)
+//         $freshOrder = \App\Models\PlacedOrder::find($order->id);
+
+//         return response()->json([
+//             'message' => 'Order placed successfully',
+//             'order' => $freshOrder,
+//             'email_attempted' => $emailAttempted,
+//             'email_result' => $emailResult
+//         ], 201);
+
+//     } catch (\Illuminate\Validation\ValidationException $ve) {
+//         return response()->json(['errors' => $ve->errors()], 422);
+//     } catch (\Throwable $e) {
+//         \Log::error('Place order failed', ['err' => $e->getMessage(), 'payload' => $request->all()]);
+//         return response()->json(['error' => 'Failed to place order', 'details' => $e->getMessage()], 500);
+//     }
+// }
+
+public function store(\Illuminate\Http\Request $request)
 {
     try {
         // Authenticate the user using JWT token
         $user = \Tymon\JWTAuth\Facades\JWTAuth::parseToken()->authenticate();
 
-        // Validate the request
+        // Validate the request (delivery/packaging optional)
         $request->validate([
             'name' => 'required|string|max:255',
             'street1' => 'required|string|max:255',
@@ -90,7 +369,10 @@ class PlaceOrderController extends Controller {
             'payment_method' => 'required|string|max:50',
             'cart_id' => 'required|integer',
             'cart_total' => 'required|numeric',
-            'order_status' => 'nullable|string|max:50'
+            'order_status' => 'nullable|string|max:50',
+            'delivery_charges' => 'nullable|numeric',
+            'packaging_cost' => 'nullable|numeric',
+            'payment_gateway_fee' => 'nullable|numeric', // allow override if frontend provides
         ]);
 
         // Prevent duplicate orders for same cart
@@ -102,28 +384,132 @@ class PlaceOrderController extends Controller {
             ], 409);
         }
 
-        // Create the order
-        $order = \App\Models\PlacedOrder::create([
-            'user_id' => $user->id,
-            'name' => $request->name,
-            'street1' => $request->street1,
-            'street2' => $request->street2 ?? null,
-            'city' => $request->city,
-            'state' => $request->state,
-            'pincode' => $request->pincode,
-            'mobile' => $request->mobile,
-            'payment_method' => $request->payment_method,
-            'cart_id' => $request->cart_id,
-            'cart_total' => $request->cart_total,
-            'order_status' => $request->order_status ?? 'Order Confirmed',
-        ]);
+        // Load cart with items and product relationship
+        $cart = \App\Models\Cart::with(['cartItems.product'])->find($request->cart_id);
+        if (!$cart) {
+            return response()->json(['message' => 'Cart not found'], 404);
+        }
 
-        // Optionally mark cart completed here if desired (you already call from frontend)
-        // try {
-        //     \App\Models\Cart::where('id', $request->cart_id)->update(['status' => 'completed']);
-        // } catch (\Throwable $e) {
-        //     \Log::warning('Failed to mark cart completed', ['cart_id'=>$request->cart_id, 'err'=>$e->getMessage()]);
-        // }
+        // Compute total quantity (for packaging cost default)
+        $cartItems = $cart->cartItems ?? collect();
+        $totalQuantity = $cartItems->reduce(function ($carry, $ci) {
+            return $carry + (int)($ci->quantity ?? 0);
+        }, 0);
+
+        // Defaults
+        $DEFAULT_DELIVERY = 100.00;          // ₹100 default delivery
+        $PACKAGING_PER_UNIT = 15.00;         // ₹15 per product unit
+
+        $defaultPackaging = round($PACKAGING_PER_UNIT * $totalQuantity, 2);
+
+        // Determine delivery_charges and packaging_cost to use (prefer request values)
+        $deliveryChargesToUse = $request->has('delivery_charges')
+            ? floatval($request->input('delivery_charges', 0))
+            : $DEFAULT_DELIVERY;
+
+        $packagingCostToUse = $request->has('packaging_cost')
+            ? floatval($request->input('packaging_cost', 0))
+            : $defaultPackaging;
+
+        // Begin DB transaction so we snapshot consistently
+        $order = null;
+        \DB::beginTransaction();
+        try {
+            // Create the order base record (so id exists) with computed defaults
+            $order = \App\Models\PlacedOrder::create([
+                'user_id' => $user->id,
+                'name' => $request->name,
+                'street1' => $request->street1,
+                'street2' => $request->street2 ?? null,
+                'city' => $request->city,
+                'state' => $request->state,
+                'pincode' => $request->pincode,
+                'mobile' => $request->mobile,
+                'payment_method' => $request->payment_method,
+                'cart_id' => $request->cart_id,
+                'cart_total' => $request->cart_total,
+                'order_status' => $request->order_status ?? 'Order Confirmed',
+                // use computed defaults (request value overrides computed default)
+                'delivery_charges' => $deliveryChargesToUse,
+                'packaging_cost' => $packagingCostToUse,
+            ]);
+
+            // Build items snapshot and compute items_cost_sum
+            $itemsSnapshot = [];
+            $itemsCostSum = 0;
+
+            foreach ($cartItems as $ci) {
+                $product = $ci->product;
+                $qty = intval($ci->quantity ?? 0);
+
+                // Read cost_price from product table at placement time (fallback to 0)
+                $costPrice = 0;
+                if ($product && isset($product->cost_price)) {
+                    $costPrice = floatval($product->cost_price);
+                }
+
+                // Determine selling price snapshot
+                $sellingPrice = isset($ci->price) ? floatval($ci->price) : (isset($product->price) ? floatval($product->price) : 0);
+
+                // Accumulate items cost
+                $itemsCostSum += ($costPrice * $qty);
+
+                // Push snapshot entry
+                $itemsSnapshot[] = [
+                    'product_id' => $product->id ?? $ci->product_id ?? null,
+                    'name' => $product->name ?? null,
+                    'quantity' => $qty,
+                    'selling_price' => $sellingPrice,
+                    'cost_price' => $costPrice,
+                ];
+            }
+
+            // Compute payment gateway fee for prepaid orders: 2% of cart_total (unless frontend provided an explicit fee)
+            $paymentMethod = $order->payment_method;
+            $isPrepaid = strtolower($paymentMethod) !== 'cod' && !empty($paymentMethod);
+
+            // If frontend provided payment_gateway_fee, respect it; otherwise compute default if prepaid
+            if ($request->has('payment_gateway_fee')) {
+                $gatewayFee = floatval($request->input('payment_gateway_fee', 0));
+            } elseif ($isPrepaid) {
+                $gatewayFee = round(floatval($order->cart_total) * 0.02, 2); // 2% of cart total
+            } else {
+                $gatewayFee = 0.00;
+            }
+
+            // Delivery & packaging already determined above
+            $delivery = floatval($order->delivery_charges ?? $deliveryChargesToUse);
+            $packaging = floatval($order->packaging_cost ?? $packagingCostToUse);
+
+            // total expense and net profit
+            $totalExpense = round($itemsCostSum + $delivery + $packaging + $gatewayFee, 2);
+            $netProfit = round(floatval($order->cart_total) - $totalExpense, 2);
+
+            // Update order with computed fields
+            $order->update([
+                'is_prepaid' => $isPrepaid,
+                'payment_gateway_fee' => $gatewayFee,
+                'items_cost_sum' => $itemsCostSum,
+                'total_expense' => $totalExpense,
+                'net_profit' => $netProfit,
+                'items_snapshot' => json_encode($itemsSnapshot),
+            ]);
+
+            // Optionally mark cart as completed/ordered
+            try {
+                $cart->status = 'completed';
+                $cart->save();
+            } catch (\Throwable $e) {
+                // don't abort the transaction for cart update; log and continue
+                \Log::warning('Failed to mark cart completed', ['cart_id' => $cart->id, 'err' => $e->getMessage()]);
+            }
+
+            \DB::commit();
+        } catch (\Throwable $e) {
+            \DB::rollBack();
+            \Log::error('Order placement transaction failed', ['err' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to place order', 'details' => $e->getMessage()], 500);
+        }
 
         // --- Attempt to send "Order Confirmed" email (non-blocking) ---
         $emailAttempted = false;
@@ -149,7 +535,6 @@ class PlaceOrderController extends Controller {
                     'orderId' => $order->id,
                     'trackingId' => null,
                     'orderStatus' => 'Order Confirmed',
-                    // 'templateId' => <int> // optional: force a template ID
                 ];
 
                 // Create a Request instance and call the mail controller on an instance
@@ -175,10 +560,12 @@ class PlaceOrderController extends Controller {
             $emailResult = ['error' => $e->getMessage()];
         }
 
-        // Return the created order and email attempt info
+        // Return the created order and email attempt info (fresh order)
+        $freshOrder = \App\Models\PlacedOrder::find($order->id);
+
         return response()->json([
             'message' => 'Order placed successfully',
-            'order' => $order,
+            'order' => $freshOrder,
             'email_attempted' => $emailAttempted,
             'email_result' => $emailResult
         ], 201);

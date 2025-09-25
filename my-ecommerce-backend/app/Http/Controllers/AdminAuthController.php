@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Admin;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
@@ -192,6 +193,14 @@ public function getAdminProfile()
         return response()->json(['error' => 'Token missing or invalid'], 401);
     }
 }
+
+  public function getAllUsers(){
+
+    $Users = User::all();
+
+    return response()->json([$Users]);
+
+  }
 
 
 }

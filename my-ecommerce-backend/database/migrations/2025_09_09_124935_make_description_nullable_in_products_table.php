@@ -6,23 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
-    {
-        Schema::table('products', function (Blueprint $table) {
-            //
-        });
-    }
+  public function up()
+{
+    Schema::table('products', function (Blueprint $table) {
+        $table->json('description')->nullable()->change();
+    });
+}
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('products', function (Blueprint $table) {
-            //
-        });
-    }
+public function down()
+{
+    Schema::table('products', function (Blueprint $table) {
+        $table->json('description')->nullable(false)->change();
+    });
+}
+
 };

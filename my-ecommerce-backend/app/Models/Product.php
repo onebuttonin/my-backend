@@ -10,15 +10,24 @@ class Product extends Model {
 
     protected $fillable = [
         'name', 'price', 'old_price','image', 'hover_image', 'thumbnail_images', 'description',
-        'availableSizes', 'availableColors', 'category' ,'stock'
+        'availableSizes', 'availableColors', 'category' ,'stock','cost_price'
     ];
     
+    // protected $casts = [
+    //     'availableSizes' => 'array',
+    //     'availableColors' => 'array',
+    //     'thumbnail_images' => 'array',
+    //     'description' => 'array',
+    // ];
+
     protected $casts = [
-        'availableSizes' => 'array',
-        'availableColors' => 'array',
-        'thumbnail_images' => 'array',
-        'description' => 'array',
-    ];
+    'thumbnail_images' => 'array',
+    'availableSizes' => 'array',
+    'availableColors' => 'array',
+    'cost_price' => 'decimal:2',
+    'price' => 'decimal:2'
+];
+
 
     public function ratings()
 {
