@@ -64,13 +64,8 @@ Route::get('/get-previous-address', [PlaceOrderController::class, 'getPreviousAd
 
 // {this is for copupons}
 
-// Route::post('/add-coupon', [CouponController::class, 'addCoupon']);
-// Route::delete('/coupons/{id}', [CouponController::class, 'deleteCoupon']);
-// Route::post('/apply-coupon', [CouponController::class, 'applyCoupon']);
-// Route::post('/remove-coupon', [CouponController::class, 'removeCoupon']);
-// Route::get('/coupons', [CouponController::class, 'getAllCoupons']);
-// Route::get('/coupons/{id}', [CouponController::class, 'getCouponById']);
-// Route::post('/update-coupon/{id}', [CouponController::class, 'update']);
+Route::post('/apply-coupon', [CouponController::class, 'applyCoupon']);
+Route::post('/remove-coupon', [CouponController::class, 'removeCoupon']);
 
 
 // Route::get('/Allusers', [AuthController::class, 'getAllUsers']);
@@ -141,14 +136,12 @@ Route::prefix('admin')->group(function () {
     });
 });
 
-Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
+// Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
 
 Route::middleware(['auth:admin'])->group(function () {
 
 Route::post('/add-coupon', [CouponController::class, 'addCoupon']);
 Route::delete('/coupons/{id}', [CouponController::class, 'deleteCoupon']);
-Route::post('/apply-coupon', [CouponController::class, 'applyCoupon']);
-Route::post('/remove-coupon', [CouponController::class, 'removeCoupon']);
 Route::get('/coupons', [CouponController::class, 'getAllCoupons']);
 Route::get('/coupons/{id}', [CouponController::class, 'getCouponById']);
 Route::post('/update-coupon/{id}', [CouponController::class, 'update']);
@@ -159,19 +152,22 @@ Route::put('/products/{id}',[ProductController::class, 'update']);
 
 Route::put('/products/{id}/update-size', [ProductController::class, 'updateSize']);
 Route::delete('/products/{id}/delete-size', [ProductController::class, 'deleteSize']);
+Route::delete('/products/{id}/remove-size', [ProductController::class, 'removeSize']);
 Route::put('/products/{id}/add-size', [ProductController::class, 'addSize']);
 Route::put('/products/{id}/update-color', [ProductController::class, 'updateColor']);
 Route::delete('/products/{id}/delete-color', [ProductController::class, 'deleteColor']);
 Route::put('/products/{id}/add-color', [ProductController::class, 'addColor']);
 Route::get('/product-sizes/{id}', [ProductController::class, 'getSizes']);
 Route::post('/products/{id}/update-popularity', [ProductController::class, 'updatePopularity']);
+Route::post('/products/{id}/decrement-size', [ProductController::class, 'decrementSize']);
+
 
 Route::delete('/ratings/{id}', [ProductRatingController::class, 'destroy']); // Delete rating
 
 Route::get('adminallorders',[PlaceOrderController::class,'AllOrders']);
 Route::post('/update-status', [PlaceOrderController::class, 'updateStatusByAdmin']);
 
-// Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
+Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
 
 });
 
