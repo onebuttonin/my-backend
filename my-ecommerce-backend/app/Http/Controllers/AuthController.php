@@ -116,7 +116,7 @@ public function sendOtp(Request $request)
 
     // Save OTP with expiration time (5 minutes)
     $user->otp = $otp;
-    $user->otp_expires_at = Carbon::now()->addMinutes(5);
+  $user->otp_expires_at = Carbon::now()->addSeconds(40);
     $user->save();
 
     try {
