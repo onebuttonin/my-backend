@@ -25,6 +25,7 @@ class Product extends Model {
     'availableSizes' => 'array',
     'availableColors' => 'array',
     'cost_price' => 'decimal:2',
+     'description' => 'array',
     'price' => 'decimal:2'
 ];
 
