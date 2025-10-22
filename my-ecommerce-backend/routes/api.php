@@ -149,6 +149,10 @@ Route::post('/update-coupon/{id}', [CouponController::class, 'update']);
 Route::post('/add-products', [ProductController::class, 'store']);
 Route::delete('/products/{id}', [ProductController::class, 'removeFromProduct']);
 Route::put('/products/{id}',[ProductController::class, 'update']);
+Route::delete('/products/{id}/delete-image', [ProductController::class, 'deleteImage']);
+Route::post('/products/{id}/replace-image', [ProductController::class, 'replaceImage'])->middleware('auth:admin');
+
+
 
 Route::put('/products/{id}/update-size', [ProductController::class, 'updateSize']);
 Route::delete('/products/{id}/delete-size', [ProductController::class, 'deleteSize']);

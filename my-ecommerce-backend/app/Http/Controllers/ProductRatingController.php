@@ -9,10 +9,43 @@ use Illuminate\Support\Facades\Validator;
 
 class ProductRatingController extends Controller
 {
-    // Add a new rating
-    public function store(Request $request)
-{
 
+//     public function store(Request $request)
+// {
+//     $user = JWTAuth::parseToken()->authenticate();
+//     $userId = $user->id;
+
+//     $request->validate([
+//         'product_id' => 'required|exists:products,id',
+//         'rating' => 'required|integer|min:1|max:5',
+//         'review' => 'nullable|string',
+//         'review_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // ✅ add validation for image
+//     ]);
+
+//     // ✅ Handle image upload
+//     $imagePath = null;
+//     if ($request->hasFile('review_image')) {
+//         $file = $request->file('review_image');
+//         $imagePath = $file->store('review_images', 'public'); // stored in storage/app/public/review_images
+//     }
+
+//     // ✅ Save rating + review + image
+//     $rating = ProductRating::create([
+//         'product_id' => $request->product_id,
+//         'user_id' => $userId,
+//         'rating' => $request->rating,
+//         'review' => $request->review,
+//         'review_image' => $imagePath, // ✅ save path to DB
+//     ]);
+
+//     // ✅ Return full image URL for frontend
+//     $rating->review_image = $imagePath ? asset('storage/' . $imagePath) : null;
+
+//     return response()->json($rating, 201);
+// }
+
+public function store(Request $request)
+{
     $user = JWTAuth::parseToken()->authenticate();
     $userId = $user->id;
 
@@ -20,17 +53,29 @@ class ProductRatingController extends Controller
         'product_id' => 'required|exists:products,id',
         'rating' => 'required|integer|min:1|max:5',
         'review' => 'nullable|string',
+        'review_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
     ]);
+
+    $imagePath = null;
+    if ($request->hasFile('review_image')) {
+        $file = $request->file('review_image');
+        $imagePath = $file->store('review_images', 'public');
+    }
 
     $rating = ProductRating::create([
         'product_id' => $request->product_id,
-        'user_id' => $userId, // user id from logged-in user
+        'user_id' => $userId,
         'rating' => $request->rating,
         'review' => $request->review,
+        'review_image' => $imagePath,
     ]);
+
+    // ✅ Convert stored path to public URL
+    $rating->review_image = $imagePath ? asset('storage/' . $imagePath) : null;
 
     return response()->json($rating, 201);
 }
+
 
 public function check(Request $request)
 {
@@ -82,14 +127,18 @@ public function check(Request $request)
         return response()->json(['message' => 'Rating deleted successfully']);
     }
 
-    public function getRatingsByProduct($productId)
- {
-    $ratings = ProductRating::with('user:id,name')  // eager load user (only id and name)
-                ->where('product_id', $productId)
-                ->get();
+
+
+public function getRatingsByProduct($productId)
+{
+    $ratings = ProductRating::with('user')
+        ->where('product_id', $productId)
+        ->latest()
+        ->get();
 
     return response()->json($ratings);
- }
+}
+
 
 
 }

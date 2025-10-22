@@ -4,166 +4,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+
+
 
 class ProductController extends Controller {
-
-
-
-// public function store(Request $request)
-// {
-//     $validator = Validator::make($request->all(), [
-//         'name' => 'required|string|max:255',
-//         'category' => 'required|string|max:255',
-//         'price' => 'required|numeric',
-//         'old_price' => 'nullable|numeric',
-//         'stock' => 'required|integer',
-//         'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
-//         'hover_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
-//         'thumbnail_images' => 'nullable|array',
-//         'thumbnail_images.*' => 'image|mimes:jpg,jpeg,png|max:5120',
-//         'availableSizes' => 'required|array',
-//         'availableSizes.*' => 'integer',
-//         'availableColors' => 'required|array',
-//         // description optional
-//         'description' => 'nullable|array', // accept as array (you can change to json/text if you prefer)
-//     ]);
-
-//     if ($validator->fails()) {
-//         return response()->json(['errors' => $validator->errors()], 422);
-//     }
-
-//     // convert sizes to integers (already validated)
-//     $availableSizes = array_map('intval', $request->input('availableSizes', []));
-
-//     // Save main image
-//     $imagePath = null;
-//     if ($request->hasFile('image')) {
-//         $imageFile = $request->file('image');
-//         $imageName = time() . '-' . $imageFile->getClientOriginalName();
-//         $imagePath = $imageFile->storeAs('products', $imageName, 'public');
-//     }
-
-//     // Save hover image
-//     $hoverImagePath = null;
-//     if ($request->hasFile('hover_image')) {
-//         $hoverImageFile = $request->file('hover_image');
-//         $hoverImageName = time() . '-' . $hoverImageFile->getClientOriginalName();
-//         $hoverImagePath = $hoverImageFile->storeAs('products', $hoverImageName, 'public');
-//     }
-
-//     // Save multiple thumbnails (optional)
-//     $thumbnailImagePaths = [];
-//     if ($request->hasFile('thumbnail_images')) {
-//         foreach ($request->file('thumbnail_images') as $file) {
-//             $thumbImageName = time() . '-' . $file->getClientOriginalName();
-//             $thumbnailImagePaths[] = $file->storeAs('products', $thumbImageName, 'public');
-//             // slight delay between names not required; timestamps can repeat, but you could append uniqid() if collisions occur
-//         }
-//     }
-
-//     // available colors
-//     $availableColors = $request->input('availableColors', []);
-
-//     // description: keep null if not provided (DB must allow null)
-//     $description = $request->has('description') ? $request->input('description') : null;
-
-//     $product = Product::create([
-//         'name' => $request->input('name'),
-//         'category' => $request->input('category'),
-//         'price' => $request->input('price'),
-//         'old_price' => $request->input('old_price'),
-//         'stock' => $request->input('stock'),
-//         'image' => $imagePath,
-//         'hover_image' => $hoverImagePath,
-//         // store as JSON string if your DB column is json or text; if you have $casts in model you can pass array
-//         'thumbnail_images' => $thumbnailImagePaths, // if Product model casts to array/json, this is fine
-//         'availableSizes' => $availableSizes,
-//         'availableColors' => $availableColors,
-//         'description' => $description,
-//     ]);
-
-//     return response()->json(['message' => 'Product added successfully!', 'product' => $product], 201);
-// }
-
-// public function store(Request $request)
-// {
-//     $validator = Validator::make($request->all(), [
-//         'name' => 'required|string|max:255',
-//         'category' => 'required|string|max:255',
-//         'price' => 'required|numeric',
-//         'cost_price' => 'nullable|numeric',         // <-- new: accept cost price
-//         'old_price' => 'nullable|numeric',
-//         'stock' => 'required|integer',
-//         'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
-//         'hover_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
-//         'thumbnail_images' => 'nullable|array',
-//         'thumbnail_images.*' => 'image|mimes:jpg,jpeg,png|max:5120',
-//         'availableSizes' => 'required|array',
-//         'availableSizes.*' => 'integer',
-//         'availableColors' => 'required|array',
-//         // description optional
-//         'description' => 'nullable|array', // accept as array (you can change to json/text if you prefer)
-//     ]);
-
-//     if ($validator->fails()) {
-//         return response()->json(['errors' => $validator->errors()], 422);
-//     }
-
-//     // convert sizes to integers (already validated)
-//     $availableSizes = array_map('intval', $request->input('availableSizes', []));
-
-//     // Save main image (use uniqid to reduce filename collisions)
-//     $imagePath = null;
-//     if ($request->hasFile('image')) {
-//         $imageFile = $request->file('image');
-//         $imageName = time() . '-' . uniqid() . '-' . $imageFile->getClientOriginalName();
-//         $imagePath = $imageFile->storeAs('products', $imageName, 'public');
-//     }
-
-//     // Save hover image
-//     $hoverImagePath = null;
-//     if ($request->hasFile('hover_image')) {
-//         $hoverImageFile = $request->file('hover_image');
-//         $hoverImageName = time() . '-' . uniqid() . '-' . $hoverImageFile->getClientOriginalName();
-//         $hoverImagePath = $hoverImageFile->storeAs('products', $hoverImageName, 'public');
-//     }
-
-//     // Save multiple thumbnails (optional)
-//     $thumbnailImagePaths = [];
-//     if ($request->hasFile('thumbnail_images')) {
-//         foreach ($request->file('thumbnail_images') as $file) {
-//             $thumbImageName = time() . '-' . uniqid() . '-' . $file->getClientOriginalName();
-//             $thumbnailImagePaths[] = $file->storeAs('products', $thumbImageName, 'public');
-//         }
-//     }
-
-//     // available colors
-//     $availableColors = $request->input('availableColors', []);
-
-//     // description: keep null if not provided (DB must allow null)
-//     $description = $request->has('description') ? $request->input('description') : null;
-
-//     // Prepare cost_price (use provided or default 0.00)
-//     $costPrice = $request->filled('cost_price') ? (float) $request->input('cost_price') : 0.00;
-
-//     $product = Product::create([
-//         'name' => $request->input('name'),
-//         'category' => $request->input('category'),
-//         'price' => $request->input('price'),
-//         'cost_price' => $costPrice,               // <-- saved here
-//         'old_price' => $request->input('old_price'),
-//         'stock' => $request->input('stock'),
-//         'image' => $imagePath,
-//         'hover_image' => $hoverImagePath,
-//         // store as array if Product model casts to array/json
-//         'thumbnail_images' => $thumbnailImagePaths,
-//         'availableSizes' => $availableSizes,
-//         'availableColors' => $availableColors,
-//         'description' => $description,
-//     ]);
-
-//     return response()->json(['message' => 'Product added successfully!', 'product' => $product], 201);
-// }
 
 
 public function store(Request $request)
@@ -246,10 +93,6 @@ public function store(Request $request)
         'product' => $product
     ], 201);
 }
-
-
-
-
     
 
 public function show($id) {
@@ -271,65 +114,6 @@ public function removeFromProduct($id) {
 
     return response()->json(['message' => 'product removed']);
 }
-
-// public function update(Request $request, $id)
-// {
-//     $product = Product::findOrFail($id);
-
-//     // Validate only the fields that are present in the request
-//     $request->validate([
-//         'name' => 'sometimes|string|max:255',
-//         'category' => 'sometimes|string|max:255',
-//         'price' => 'sometimes|numeric|min:0',
-//         'stock' => 'sometimes|integer|min:0',
-//         'description' => 'sometimes|string',
-//     ]);
-
-//     // Update only the fields that exist in the request
-//     if ($request->has('name')) $product->name = $request->name;
-//     if ($request->has('category')) $product->category = $request->category;
-//     if ($request->has('price')) $product->price = $request->price;
-//     if ($request->has('stock')) $product->stock = $request->stock;
-//     if ($request->has('description')) $product->description = $request->description;
-    
-//     $product->save();
-
-//     return response()->json([
-//         'message' => 'Product updated successfully',
-//         'product' => $product
-//     ], 200);
-// }
-
-
-// public function update(Request $request, $id)
-// {
-//     $product = Product::findOrFail($id);
-
-//     // ✅ Validate only fields that are present in the request
-//     $request->validate([
-//         'name' => 'sometimes|string|max:255',
-//         'category' => 'sometimes|string|max:255',
-//         'price' => 'sometimes|numeric|min:0',
-//         'old_price' => 'sometimes|numeric|min:0', // ✅ added validation
-//         'stock' => 'sometimes|integer|min:0',
-//         'description' => 'sometimes|string',
-//     ]);
-
-//     // ✅ Update only fields that exist in the request
-//     if ($request->has('name')) $product->name = $request->name;
-//     if ($request->has('category')) $product->category = $request->category;
-//     if ($request->has('price')) $product->price = $request->price;
-//     if ($request->has('old_price')) $product->old_price = $request->old_price; // ✅ added update
-//     if ($request->has('stock')) $product->stock = $request->stock;
-//     if ($request->has('description')) $product->description = $request->description;
-
-//     $product->save();
-
-//     return response()->json([
-//         'message' => 'Product updated successfully',
-//         'product' => $product
-//     ], 200);
-// }
 
 
 public function update(Request $request, $id)
@@ -366,6 +150,95 @@ public function update(Request $request, $id)
         'product' => $product
     ], 200);
 }
+
+
+public function replaceImage(Request $request, $id)
+{
+    $request->validate([
+        'type' => 'required|string|in:image,hover_image,thumbnail_images',
+        'new_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+        'old_path' => 'nullable|string'
+    ]);
+
+    $product = Product::findOrFail($id);
+
+    $type = $request->input('type');
+    $file = $request->file('new_image');
+    $path = $file->store('products', 'public'); // save new image
+
+    if ($type === 'image') {
+        // Delete old file
+        if ($product->image && Storage::disk('public')->exists($product->image)) {
+            Storage::disk('public')->delete($product->image);
+        }
+        $product->image = $path;
+    }
+
+    if ($type === 'hover_image') {
+        if ($product->hover_image && Storage::disk('public')->exists($product->hover_image)) {
+            Storage::disk('public')->delete($product->hover_image);
+        }
+        $product->hover_image = $path;
+    }
+
+    if ($type === 'thumbnail_images') {
+        $oldPath = $request->input('old_path');
+
+        $thumbs = $product->thumbnail_images ?? [];
+        // Replace old image path with new one
+        $thumbs = array_map(function ($thumb) use ($oldPath, $path) {
+            return $thumb === $oldPath ? $path : $thumb;
+        }, $thumbs);
+
+        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $product->thumbnail_images = $thumbs;
+    }
+
+    $product->save();
+
+    return response()->json([
+        'message' => '✅ Image replaced successfully.',
+        'product' => $product
+    ]);
+}
+
+
+public function deleteImage(Request $request, $id)
+{
+    $product = Product::findOrFail($id);
+
+    $type = $request->type;
+    $path = $request->path;
+
+    if ($type === 'image' && $product->image) {
+        \Storage::delete($product->image);
+        $product->image = null;
+    } elseif ($type === 'hover_image' && $product->hover_image) {
+        \Storage::delete($product->hover_image);
+        $product->hover_image = null;
+    } elseif ($type === 'thumbnail_images' && $path) {
+        $thumbs = $product->thumbnail_images; // assume array
+        $thumbs = array_filter($thumbs, fn($t) => $t !== $path);
+        \Storage::delete($path);
+        $product->thumbnail_images = array_values($thumbs);
+    }
+
+    $product->save();
+
+    return response()->json(['message' => 'Image deleted', 'product' => $product]);
+}
+
+
+
+
+
+
+
+
+
 
 
 
