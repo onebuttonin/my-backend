@@ -8,16 +8,23 @@ use Illuminate\Http\Request;
 class HeroImageController extends Controller
 {
     // ✅ Get all hero images (grouped by screen type)
-   public function index()
-{
-    return response()->json([
-        'large' => HeroImage::where('screen_type', 'large')
-                    ->get(['id', 'image_path as path']),
-        'small' => HeroImage::where('screen_type', 'small')
-                    ->get(['id', 'image_path as path']),
-    ]);
-}
+    public function index()
+    {
+        $large = HeroImage::where('screen_type', 'large')
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->pluck('image_path');
 
+        $small = HeroImage::where('screen_type', 'small')
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->pluck('image_path');
+
+        return response()->json([
+            'large' => $large,
+            'small' => $small,
+        ]);
+    }
 
     // ✅ Store new hero image
     public function store(Request $request)
