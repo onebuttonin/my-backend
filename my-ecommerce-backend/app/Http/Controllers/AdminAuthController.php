@@ -120,6 +120,39 @@ class AdminAuthController extends Controller {
 }
 
 
+// public function verifyOtp(Request $request)
+// {
+//     $validator = Validator::make($request->all(), [
+//         'email' => 'required|email',
+//         'otp' => 'required|digits:6',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return response()->json(['error' => $validator->errors()], 422);
+//     }
+
+//     // Find matching admin with valid OTP
+//     $admin = Admin::where('email', $request->email)
+//                   ->where('otp', $request->otp)
+//                   ->where('otp_expires_at', '>=', Carbon::now())
+//                   ->first();
+
+//     if (!$admin) {
+//         return response()->json(['error' => 'Invalid or expired OTP'], 401);
+//     }
+
+//     // Clear OTP after verification
+//     $admin->otp = null;
+//     $admin->otp_expires_at = null;
+//     $admin->save();
+
+//     // Generate and return JWT
+//     // $token = JWTAuth::fromUser($admin);
+//       $token = auth()->setTTL(7200)->fromUser($admin);
+
+//     return response()->json(['token' => $token], 200);
+// }
+
 public function verifyOtp(Request $request)
 {
     $validator = Validator::make($request->all(), [
@@ -146,11 +179,32 @@ public function verifyOtp(Request $request)
     $admin->otp_expires_at = null;
     $admin->save();
 
-    // Generate and return JWT
-    $token = JWTAuth::fromUser($admin);
+    // Generate short-lived access token (2 hours)
+    $accessToken = auth()->setTTL(120)->fromUser($admin);
 
-    return response()->json(['token' => $token], 200);
+    // Generate long-lived refresh token (5 days = 7200 minutes)
+    $refreshToken = auth()->setTTL(7200)->claims(['type' => 'refresh'])->fromUser($admin);
+
+    // Set refresh token as httpOnly, secure cookie
+    $cookie = cookie(
+        'refresh_token',   // name
+        $refreshToken,     // value
+        7200,              // minutes (5 days)
+        '/',               // path
+        null,              // domain (null = current)
+        true,              // secure (HTTPS only)
+        true,              // httpOnly
+        false,             // raw
+        'Strict'           // sameSite
+    );
+
+    // Return both: access token + refresh token (cookie)
+    return response()->json([
+        'access_token' => $accessToken,
+        'message' => 'OTP verified successfully',
+    ], 200)->withCookie($cookie);
 }
+
 
 
 
@@ -160,6 +214,47 @@ public function verifyOtp(Request $request)
         return response()->json(['message' => 'Admin logged out successfully']);
     }
 
+
+// AuthController.php
+public function refreshToken(Request $request)
+    {
+        try {
+            // Get refresh token from httpOnly cookie
+            $refreshToken = $request->cookie('refresh_token');
+
+            if (!$refreshToken) {
+                return response()->json(['error' => 'No refresh token found'], 401);
+            }
+
+            // Try authenticating using refresh token
+            $admin = auth()->setToken($refreshToken)->user();
+
+            if (!$admin) {
+                return response()->json(['error' => 'Invalid refresh token'], 401);
+            }
+
+            // ✅ Issue new short-lived access token (2 hours)
+            $newAccessToken = auth()->setTTL(120)->fromUser($admin);
+
+            // Optionally — issue a fresh refresh token (for rotation)
+            $newRefreshToken = auth()->setTTL(7200)->fromUser($admin); // 5 days
+            $cookie = cookie(
+                'refresh_token',
+                $newRefreshToken,
+                7200 * 60, // minutes
+                null,
+                null,
+                true,  // secure
+                true   // httpOnly
+            );
+
+            return response()->json([
+                'access_token' => $newAccessToken,
+            ])->withCookie($cookie);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Token refresh failed'], 401);
+        }
+    }
 
 
     

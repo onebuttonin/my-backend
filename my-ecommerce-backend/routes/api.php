@@ -17,6 +17,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\ProductRatingController;
 use App\Http\Controllers\TransactionalMailController;
+use App\Http\Controllers\HeroImageController;
 
 
 Route::middleware('api')->group(function () {
@@ -89,6 +90,7 @@ Route::middleware(['jwt.auth'])->post('/wishlist', [WishlistController::class, '
 Route::middleware(['jwt.auth'])->delete('/wishlist/{id}', [WishlistController::class, 'destroy']);
 Route::middleware(['jwt.auth'])->get('/wishlist', [WishlistController::class, 'index']);
 
+Route::get('/hero-images', [HeroImageController::class, 'index']);
 
 Route::get('/search', function (Request $request) {
     $query = $request->query('query');
@@ -129,7 +131,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']); // Step 1: Request OTP
     Route::post('/verify-otp', [AdminAuthController::class, 'verifyOTP']); // Step 2: Verify OTP
     Route::middleware(['auth:admin'])->get('/profile',[AdminAuthController::class, 'getAdminProfile']);
-  
+  Route::post('token/refresh', [AdminAuthController::class, 'refreshToken']);
 
     Route::middleware('auth:api')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout']);
@@ -151,7 +153,7 @@ Route::delete('/products/{id}', [ProductController::class, 'removeFromProduct'])
 Route::put('/products/{id}',[ProductController::class, 'update']);
 Route::delete('/products/{id}/delete-image', [ProductController::class, 'deleteImage']);
 Route::post('/products/{id}/replace-image', [ProductController::class, 'replaceImage'])->middleware('auth:admin');
-
+Route::post('/products/{id}/addthumbnail', [ProductController::class, 'addThumbnailImages']);
 
 
 Route::put('/products/{id}/update-size', [ProductController::class, 'updateSize']);
@@ -172,6 +174,10 @@ Route::get('adminallorders',[PlaceOrderController::class,'AllOrders']);
 Route::post('/update-status', [PlaceOrderController::class, 'updateStatusByAdmin']);
 
 Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
+
+Route::post('/hero-images', [HeroImageController::class, 'store']);
+Route::delete('/hero-images/{id}', [HeroImageController::class, 'destroy']);
+
 
 });
 

@@ -205,6 +205,47 @@ public function replaceImage(Request $request, $id)
     ]);
 }
 
+public function addThumbnailImages(Request $request, $id)
+{
+    $product = Product::findOrFail($id);
+
+    // ✅ Validate input
+    $validator = Validator::make($request->all(), [
+        'thumbnail_images' => 'required|array',
+        'thumbnail_images.*' => 'image|mimes:jpg,jpeg,png|max:5120',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    // ✅ Store new thumbnails
+    $newThumbnailPaths = [];
+    if ($request->hasFile('thumbnail_images')) {
+        foreach ($request->file('thumbnail_images') as $file) {
+            $thumbName = time() . '-' . uniqid() . '-' . $file->getClientOriginalName();
+            $newThumbnailPaths[] = $file->storeAs('products', $thumbName, 'public');
+        }
+    }
+
+    // ✅ Merge with existing thumbnails (if any)
+    $existingThumbnails = is_array($product->thumbnail_images)
+        ? $product->thumbnail_images
+        : (json_decode($product->thumbnail_images, true) ?? []);
+
+    $updatedThumbnails = array_merge($existingThumbnails, $newThumbnailPaths);
+
+    // ✅ Update product record
+    $product->update([
+        'thumbnail_images' => $updatedThumbnails,
+    ]);
+
+    return response()->json([
+        'message' => 'Thumbnail images added successfully!',
+        'product' => $product
+    ], 200);
+}
+
 
 public function deleteImage(Request $request, $id)
 {
@@ -230,16 +271,6 @@ public function deleteImage(Request $request, $id)
 
     return response()->json(['message' => 'Image deleted', 'product' => $product]);
 }
-
-
-
-
-
-
-
-
-
-
 
 
 public function updatePrice(Request $request, $id)
