@@ -176,7 +176,7 @@ Route::post('/update-status', [PlaceOrderController::class, 'updateStatusByAdmin
 Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
 
 Route::post('/hero-images', [HeroImageController::class, 'store']);
-Route::delete('/hero-images/{id}', [HeroImageController::class, 'destroy']);
+Route::delete('/hero-images', [HeroImageController::class, 'destroy']);
 
 
 });

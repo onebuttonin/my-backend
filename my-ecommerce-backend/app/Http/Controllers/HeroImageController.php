@@ -45,11 +45,30 @@ class HeroImageController extends Controller
     }
 
     // ✅ Delete hero image
-    public function destroy($id)
-    {
-        $image = HeroImage::findOrFail($id);
-        $image->delete();
+public function destroy(Request $request)
+{
+    $path = $request->input('path');
 
-        return response()->json(['message' => 'Image deleted successfully']);
+    if (!$path) {
+        return response()->json(['error' => 'Image path is required'], 400);
     }
+
+    $image = HeroImage::where('image_path', $path)->first();
+
+    if (!$image) {
+        return response()->json(['error' => 'Image not found'], 404);
+    }
+
+    // Optional: delete the file from storage if it exists
+    $fullPath = public_path($path);
+    if (file_exists($fullPath)) {
+        unlink($fullPath);
+    }
+
+    $image->delete();
+
+    return response()->json(['message' => 'Image deleted successfully']);
+}
+
+
 }
