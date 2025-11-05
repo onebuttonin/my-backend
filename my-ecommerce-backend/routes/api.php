@@ -64,7 +64,6 @@ Route::post('/update-order-status', [PlaceOrderController::class, 'updateStatus'
 Route::get('/get-previous-address', [PlaceOrderController::class, 'getPreviousAddress']);
 
 // {this is for copupons}
-
 Route::post('/apply-coupon', [CouponController::class, 'applyCoupon']);
 Route::post('/remove-coupon', [CouponController::class, 'removeCoupon']);
 
@@ -116,12 +115,13 @@ Route::middleware(['jwt.auth'])->get('/cart', [CartController::class, 'getCart']
 
 Route::post('/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/user/refresh-token', [AuthController::class, 'refreshToken']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/check-user', [AuthController::class, 'checkUser']);
 Route::delete('/user-delete/{id}',[AuthController::class, 'destroy']);
 
-Route::middleware(['jwt.auth'])->get('/user-token',[AuthController::class, 'getUserToken']);
-Route::middleware(['jwt.auth'])->get('/user-profile', [AuthController::class, 'getUserProfile']);
+// Route::get('/user-token',[AuthController::class, 'getUserToken']);
+Route::get('/user/profile', [AuthController::class, 'getUserProfile']);
 
 
 
@@ -131,7 +131,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']); // Step 1: Request OTP
     Route::post('/verify-otp', [AdminAuthController::class, 'verifyOTP']); // Step 2: Verify OTP
     Route::middleware(['auth:admin'])->get('/profile',[AdminAuthController::class, 'getAdminProfile']);
-  Route::post('token/refresh', [AdminAuthController::class, 'refreshToken']);
+  Route::post('/refresh-token', [AdminAuthController::class, 'refreshToken']);
 
     Route::middleware('auth:api')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout']);
@@ -139,6 +139,9 @@ Route::prefix('admin')->group(function () {
 });
 
 // Route::get('/Allusers',[AuthController::class, 'getAllUsers']);
+
+
+Route::get('/user-coupons', [CouponController::class, 'getAllCoupons']);
 
 Route::middleware(['auth:admin'])->group(function () {
 

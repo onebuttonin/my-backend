@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Exceptions\JWTException;
 
 class PlaceOrderController extends Controller {
 
@@ -640,26 +643,33 @@ public function store(\Illuminate\Http\Request $request)
 
 
 
-    // Get all orders
-    public function index()
-    {
-        try {
-            // ✅ Authenticate the user using JWT token
-            $user = JWTAuth::parseToken()->authenticate();
-    
-            // ✅ Fetch only the authenticated user's orders
-            $orders = PlacedOrder::where('user_id', $user->id)->get();
-    
-            if ($orders->isEmpty()) {
-                return response()->json(['message' => 'No orders found'], 404);
-            }
-    
-            return response()->json($orders, 200);
-    
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+
+
+public function index()
+{
+    try {
+        $user = JWTAuth::parseToken()->authenticate();
+
+        $orders = PlacedOrder::where('user_id', $user->id)->get();
+
+        if ($orders->isEmpty()) {
+            return response()->json(['message' => 'No orders found'], 404);
         }
+
+        return response()->json($orders, 200);
+
+    } catch (TokenExpiredException $e) {
+        return response()->json(['error' => 'Token expired'], 401);
+    } catch (TokenInvalidException $e) {
+        return response()->json(['error' => 'Token invalid'], 401);
+    } catch (JWTException $e) {
+        return response()->json(['error' => 'Token missing'], 401);
+    } catch (\Throwable $e) {
+        \Log::error('❌ Order Fetch Error: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
+
 
     // public function AllOrders()
     // {
