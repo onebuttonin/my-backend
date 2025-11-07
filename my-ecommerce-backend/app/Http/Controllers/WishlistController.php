@@ -64,10 +64,11 @@ public function store(Request $request)
         // ✅ Log the wishlist entry
         \Log::info('Wishlist entry created or found', ['wishlist' => $wishlist]);
 
-        return response()->json([
-            'message' => 'Added to wishlist successfully',
-            'wishlist' => $wishlist,
-        ]);
+       return response()->json([
+    'message' => 'Added to wishlist successfully',
+    'wishlist' => $wishlist->only(['id', 'user_id', 'product_id']),
+], 200);
+
 
     } catch (\Illuminate\Validation\ValidationException $e) {
         return response()->json([
