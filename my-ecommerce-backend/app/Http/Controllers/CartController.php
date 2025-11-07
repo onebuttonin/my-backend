@@ -318,29 +318,75 @@ public function getCartByIds($cart_id)
 
     
      // {new}
-    public function updateCart(Request $request, $product_id)
-    {
-        $user = JWTAuth::parseToken()->authenticate();
+public function updateCart(Request $request, $cart_id)
+{
+    // Validate request
+    $request->validate([
+        'quantity' => 'required|integer|min:1|max:10',
+    ]);
 
-        // Validate request
-        $request->validate([
-            'quantity' => 'required|integer|min:1',
-            // 'size' => 'required|string|max:10',
-        ]);
+    // Get the cart_id from the request (make sure it's passed from frontend)
+    $product_id = $request->input('product_id');
 
-        $cartItem  = CartItem::where('product_id', $product_id)->first();
-
-        if (!$cartItem) {
-            return response()->json(['message' => 'Cart item not found'], 404);
-        }
-
-        // Update quantity and size
-        $cartItem->quantity = $request->quantity;
-        // $cartItem->size = $request->size;
-        $cartItem->save();
-
-        return response()->json(['message' => 'Cart updated successfully']);
+    if (!$cart_id) {
+        return response()->json(['message' => 'Cart ID is required'], 400);
     }
+
+    // Find the cart item using both cart_id and product_id
+    $cartItem = CartItem::where('cart_id', $cart_id)
+                        ->where('product_id', $product_id)
+                        ->first();
+
+    if (!$cartItem) {
+        return response()->json(['message' => 'Cart item not found'], 404);
+    }
+
+    // Update quantity
+    $cartItem->quantity = $request->quantity;
+    $cartItem->save();
+
+    return response()->json([
+        'message' => 'Cart updated successfully',
+        'cart_item' => $cartItem
+    ], 200);
+}
+
+
+
+public function removeFromCart(Request $request, $cart_id)
+{
+   
+
+    $product_id = $request->input('product_id');
+
+
+    if (!$cart_id) {
+        return response()->json(['message' => 'Cart ID is required'], 400);
+    }
+
+    // Find the cart item using both cart_id and product_id
+    $cartItem = CartItem::where('cart_id', $cart_id)
+                        ->where('product_id', $product_id)
+                        ->first();
+
+    if (!$cartItem) {
+        return response()->json(['message' => 'Cart item not found'], 404);
+    }
+
+    // Delete the cart item
+    $cartItem->delete();
+
+    // Optionally, fetch remaining cart items for updated cart summary
+    $remainingItems = CartItem::where('cart_id', $cart_id)
+                              ->with('product')
+                              ->get();
+
+    return response()->json([
+        'message' => 'Product removed from cart',
+        'remaining_items' => $remainingItems
+    ], 200);
+}
+
 
 
 
@@ -404,47 +450,8 @@ public function getCartByStatus($status)
 
    
 
-    public function removeFromCart($product_id)
-    {
+   
 
-        $user = JWTAuth::parseToken()->authenticate();
-
-        $cartItem = CartItem::where('product_id', $product_id)->first(); // Find by product_id
-    
-        if (!$cartItem) {
-            return response()->json(['message' => 'Cart item not found'], 404);
-        }
-    
-        // Store cart_id before deletion
-        $cartId = $cartItem->cart_id;
-        // $cart = Cart::where('id', $cartId)->first();
-        // Delete the cart item
-        $cartItem->delete();
-        
-        // Fetch updated cart items after deletion
-        $remainingItems = CartItem::where('cart_id', $cartId)->with('product')->get();
-    
-        return response()->json([
-            "message" => "Product removed from cart",]);
-    }
-
-
-
-    // Update Quantity in Cart
-    // public function updateCart(Request $request, $product_id)
-    // {
-    //     $cartItem = Cart::where('product_id',$product_id)->first();
-    //     if (!$cartItem) {
-    //         return response()->json(['message' => 'Cart item not found'], 404);
-    //     }
-
-    //     $request->validate([
-    //         'quantity' => 'required|integer|min:1',
-    //     ]);
-
-    //     $cartItem->update(['quantity' => $request->quantity]);
-    //     return response()->json(['message' => 'Cart updated', 'cart' => $cartItem]);
-    // }
 
     
     public function updateStatus(Request $request) 

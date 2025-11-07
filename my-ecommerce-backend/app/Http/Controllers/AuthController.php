@@ -367,12 +367,6 @@ public function verifyOtp(Request $request)
     ], 200)->withCookie($cookie);
 }
 
-
-
-
-
-
-
 public function refreshToken(Request $request)
 {
     try {
@@ -396,7 +390,7 @@ public function refreshToken(Request $request)
         }
 
         // ✅ New access & refresh tokens
-        $newAccessToken = auth()->setTTL(1)->fromUser($user);
+        $newAccessToken = auth()->setTTL(120)->fromUser($user);
         $newRefreshToken = auth()
             ->setTTL(60 * 24 * 15)
             ->claims(['type' => 'refresh'])

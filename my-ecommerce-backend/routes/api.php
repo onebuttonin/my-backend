@@ -27,7 +27,7 @@ Route::middleware(['jwt.auth'])->get('/cart', [CartController::class, 'getCart']
 Route::middleware(['jwt.auth'])->get('/cart/{id}', [CartController::class, 'getCartById']);
 Route::get('/carts/{id}',[CartController::class, 'getCartByIds']);
 
-Route::delete('/cart/{id}', [CartController::class, 'removeFromCart']);
+Route::delete('/cart-delete/{cart_id}', [CartController::class, 'removeFromCart']);
 Route::put('/cart/{id}', [CartController::class, 'updateCart']);
 Route::get('/cartItem/{id}', [CartController::class, 'getCartItemsById']);
 Route::post('/cart/update-status', [CartController::class, 'updateStatus']);
