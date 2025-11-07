@@ -11,43 +11,82 @@ class WishlistController extends Controller
 {
     
 
-public function store(Request $request) 
+// public function store(Request $request) 
+// {
+//     try {
+        
+//         // ✅ Authenticate user
+//         $user = JWTAuth::parseToken()->authenticate();
+
+//         if (!$user) {
+//             return response()->json(['error' => 'Unauthorized'], 401);
+//         }
+
+//         // ✅ Save to wishlist
+//         $wishlist = Wishlist::firstOrCreate([
+//             'user_id' => $user->id,              // Use $user->id
+//             'product_id' => $request->product_id,
+//         ]);
+
+//         // ✅ Log the wishlist entry
+//         \Log::info('Wishlist entry:', ['wishlist' => $wishlist]);
+
+//         return response()->json(['message' => 'Added to wishlist', 'wishlist' => $wishlist]);
+         
+//     } catch (\Exception $e) {
+//         \Log::error('Error:', ['error' => $e->getMessage()]);
+//         return response()->json(['error' => $e->getMessage()], 500);
+//     }
+// }
+
+
+public function store(Request $request)
 {
     try {
-        // ✅ Log the incoming token
-        // \Log::info('Token:', ['token' => $request->header('Authorization')]);
-
-        // ✅ Authenticate user
-        $user = JWTAuth::parseToken()->authenticate();
-        
-        // ✅ Log the authenticated user
-        // \Log::info('Authenticated User:', ['user' => $user]);
+        // ✅ Automatically authenticated via auth:user middleware
+        $user = auth('user')->user();
 
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // ✅ Save to wishlist
+        // ✅ Validate input
+        $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+        ]);
+
+        // ✅ Create or get wishlist entry
         $wishlist = Wishlist::firstOrCreate([
-            'user_id' => $user->id,              // Use $user->id
+            'user_id' => $user->id,
             'product_id' => $request->product_id,
         ]);
 
         // ✅ Log the wishlist entry
-        \Log::info('Wishlist entry:', ['wishlist' => $wishlist]);
+        \Log::info('Wishlist entry created or found', ['wishlist' => $wishlist]);
 
-        return response()->json(['message' => 'Added to wishlist', 'wishlist' => $wishlist]);
-         
+        return response()->json([
+            'message' => 'Added to wishlist successfully',
+            'wishlist' => $wishlist,
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'error' => 'Validation failed',
+            'details' => $e->errors(),
+        ], 422);
+
     } catch (\Exception $e) {
-        \Log::error('Error:', ['error' => $e->getMessage()]);
-        return response()->json(['error' => $e->getMessage()], 500);
+        \Log::error('Wishlist store error', ['error' => $e->getMessage()]);
+        return response()->json(['error' => 'Something went wrong'], 500);
     }
 }
 
-    // Remove product from wishlist
-    public function destroy($id)
+
+
+
+public function destroy($id)
     {
-        $user = JWTAuth::parseToken()->authenticate();                     // ✅ Get the current user ID
+         $user = auth('user')->user();                   // ✅ Get the current user ID
         $wishlist = Wishlist::where('product_id', $id)
                             ->where('user_id', $user->id)  // ✅ Ensure only user's wishlist item is deleted
                             ->first();
@@ -65,7 +104,7 @@ public function store(Request $request)
 {
     try {
         // ✅ Authenticate user
-        $user = JWTAuth::parseToken()->authenticate(); 
+         $user = auth('user')->user();
 
         // ✅ Get the current user's wishlist with products
         $wishlist = Wishlist::with('product')
