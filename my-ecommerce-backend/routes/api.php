@@ -85,9 +85,9 @@ Route::post('/remove-coupon', [CouponController::class, 'removeCoupon']);
 
 // {wishlist Api's}
 
-Route::middleware(['jwt.auth'])->post('/wishlist', [WishlistController::class, 'store']);
-Route::middleware(['jwt.auth'])->delete('/wishlist/{id}', [WishlistController::class, 'destroy']);
-Route::middleware(['jwt.auth'])->get('/wishlist', [WishlistController::class, 'index']);
+Route::post('/wishlist', [WishlistController::class, 'store']);
+Route::delete('/wishlist/{id}', [WishlistController::class, 'destroy']);
+Route::get('/wishlist', [WishlistController::class, 'index']);
 
 Route::get('/hero-images', [HeroImageController::class, 'index']);
 
