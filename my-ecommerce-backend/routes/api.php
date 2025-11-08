@@ -83,11 +83,7 @@ Route::post('/remove-coupon', [CouponController::class, 'removeCoupon']);
 
 
 
-// {wishlist Api's}
 
-Route::post('/wishlist', [WishlistController::class, 'store']);
-Route::delete('/wishlist/{id}', [WishlistController::class, 'destroy']);
-Route::get('/wishlist', [WishlistController::class, 'index']);
 
 Route::get('/hero-images', [HeroImageController::class, 'index']);
 
@@ -123,6 +119,18 @@ Route::delete('/user-delete/{id}',[AuthController::class, 'destroy']);
 // Route::get('/user-token',[AuthController::class, 'getUserToken']);
 Route::get('/user/profile', [AuthController::class, 'getUserProfile']);
 
+
+
+
+//-------------------------------------------------------{user protected route}-------------------------------------------------------------------------------------------------------------------
+Route::middleware(['auth:user'])->group(function () {
+
+//{wishlist Api's}
+Route::post('/wishlist', [WishlistController::class, 'store']);
+Route::delete('/wishlist/{id}', [WishlistController::class, 'destroy']);
+Route::get('/wishlist', [WishlistController::class, 'index']);
+
+});
 
 
 
