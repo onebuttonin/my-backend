@@ -32,7 +32,7 @@ Route::put('/cart/{id}', [CartController::class, 'updateCart']);
 Route::get('/cartItem/{id}', [CartController::class, 'getCartItemsById']);
 Route::post('/cart/update-status', [CartController::class, 'updateStatus']);
 Route::get('/cart/status/{status}', [CartController::class, 'getCartByStatus']);
-
+Route::post('/cart/attach/{id}', [CartController::class, 'attachCartToUser']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
     
@@ -104,8 +104,10 @@ Route::get('/phpinfo', function () {
 });
 
 
-Route::middleware(['jwt.auth'])->post('/add-cart', [CartController::class, 'addToCart']);
+Route::post('/add-cart', [CartController::class, 'addToCart']);
+Route::post('/merge-guest-cart', [CartController::class, 'mergeGuestCart']);
 Route::middleware(['jwt.auth'])->get('/cart', [CartController::class, 'getCart']);
+
 
 // {Auth Apis}
 
@@ -114,7 +116,8 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/user/refresh-token', [AuthController::class, 'refreshToken']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/check-user', [AuthController::class, 'checkUser']);
-Route::delete('/user-delete/{id}',[AuthController::class, 'destroy']);
+Route::delete('/user-delete/{id}',action: [AuthController::class, 'destroy']);
+Route::post('/user/logout', [AuthController::class, 'logout']);
 
 // Route::get('/user-token',[AuthController::class, 'getUserToken']);
 Route::get('/user/profile', [AuthController::class, 'getUserProfile']);
@@ -138,7 +141,7 @@ Route::get('/wishlist', [WishlistController::class, 'index']);
 Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']); // Step 1: Request OTP
     Route::post('/verify-otp', [AdminAuthController::class, 'verifyOTP']); // Step 2: Verify OTP
-    Route::middleware(['auth:admin'])->get('/profile',[AdminAuthController::class, 'getAdminProfile']);
+    Route::get('/profile',[AdminAuthController::class, 'getAdminProfile']);
   Route::post('/refresh-token', [AdminAuthController::class, 'refreshToken']);
 
     Route::middleware('auth:api')->group(function () {

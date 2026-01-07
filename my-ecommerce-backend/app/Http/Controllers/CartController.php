@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\CartItem;
 use App\Models\Product;
+use Illuminate\Support\Facades\DB;
+
 
 
 
@@ -73,6 +75,8 @@ class CartController extends Controller
     // }
     
     // {new}
+    
+    
     public function addToCart(Request $request)
     {
         $user = JWTAuth::parseToken()->authenticate();
@@ -120,6 +124,70 @@ class CartController extends Controller
 
         return response()->json(['message' => 'Item added to cart successfully']);
     }
+
+
+public function mergeGuestCart(Request $request)
+{
+    $user = JWTAuth::parseToken()->authenticate();
+
+    // Validate request
+    $request->validate([
+        'items' => 'required|array|min:1',
+        'items.*.product_id' => 'required|exists:products,id',
+        'items.*.quantity' => 'required|integer|min:1',
+        'items.*.size' => 'required|string|max:10',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        // Get or create active cart
+        $cart = Cart::firstOrCreate(
+            ['user_id' => $user->id, 'status' => 'pending'],
+            ['user_id' => $user->id, 'status' => 'pending']
+        );
+
+        foreach ($request->items as $item) {
+
+            $cartItem = CartItem::where('cart_id', $cart->id)
+                ->where('product_id', $item['product_id'])
+                ->where('size', $item['size'])
+                ->first();
+
+            if ($cartItem) {
+                // If same product+size exists → increment quantity
+                $cartItem->quantity += $item['quantity'];
+                $cartItem->save();
+            } else {
+                // Else → insert new item
+                CartItem::create([
+                    'cart_id' => $cart->id,
+                    'product_id' => $item['product_id'],
+                    'size' => $item['size'],
+                    'quantity' => $item['quantity'],
+                ]);
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Guest cart merged successfully'
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'message' => 'Failed to merge cart',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+ 
+
+
 
 
 

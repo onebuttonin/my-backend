@@ -534,6 +534,32 @@ public function register(Request $request)
 }
 
 
+public function logout(Request $request)
+{
+    try {
+        // get token from Authorization header
+        $token = JWTAuth::getToken();
+
+        if ($token) {
+            // invalidate the access token (requires blacklist enabled)
+            JWTAuth::invalidate($token);
+        }
+
+        // If you issue refresh tokens as a cookie named "user_refresh_token",
+        // clear it by sending a forget-cookie in the response.
+        $forgetCookie = Cookie::forget('user_refresh_token');
+
+        return response()->json(['message' => 'Logged out successfully'], 200)
+                         ->withCookie($forgetCookie);
+    } catch (JWTException $e) {
+        // If invalidate failed, still clear cookie and respond
+        $forgetCookie = Cookie::forget('user_refresh_token');
+        return response()->json(['error' => 'Failed to logout'], 500)
+                         ->withCookie($forgetCookie);
+    }
+}
+
+
 
 // public function register(Request $request)
 // {
